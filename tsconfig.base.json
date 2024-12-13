@@ -17,6 +17,8 @@
     "paths": {
       "@fairys-nx-workshop/common": ["libs/frontend/common/src/index.ts"],
       "@fairys-nx-workshop/features": ["libs/frontend/features/src/index.ts"],
+      "@fairys-nx-workshop/game": ["libs/game-review/features/src/index.ts"],
+      "@fairys-nx-workshop/game-review": ["libs/game-review/src/index.ts"],
       "@fairys-nx-workshop/ui": ["libs/frontend/ui/src/index.ts"],
       "@game-platform/backend/dto": ["libs/backend/dto/src/index.ts"],
       "@game-platform/backend/features": ["libs/backend/features/src/index.ts"],
