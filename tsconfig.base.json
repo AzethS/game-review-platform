@@ -14,7 +14,14 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@fairys-nx-workshop/common": ["libs/frontend/common/src/index.ts"],
+      "@fairys-nx-workshop/features": ["libs/frontend/features/src/index.ts"],
+      "@fairys-nx-workshop/ui": ["libs/frontend/ui/src/index.ts"],
+      "@game-platform/backend/dto": ["libs/backend/dto/src/index.ts"],
+      "@game-platform/backend/features": ["libs/backend/features/src/index.ts"],
+      "@game-platform/shared/api": ["libs/shared/api/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
