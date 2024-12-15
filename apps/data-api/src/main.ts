@@ -12,9 +12,16 @@ import { ApiResponseInterceptor } from '@game-platform/backend/dto';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // Define allowed CORS origins based on environment
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://your-production-frontend.com'] // Replace with production frontend URL
+    : ['http://localhost:4200']; // Development Frontend URL
+
+  // Enable CORS with dynamic origins
   app.enableCors({
-    origin: '*', // Allow all origins; restrict this in production to specific domains.
+    origin: allowedOrigins,
+    methods: 'GET,POST,PUT,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
   });
 
   // Apply global interceptor for consistent API responses
@@ -34,11 +41,14 @@ async function bootstrap() {
   SwaggerModule.setup(`${globalPrefix}/docs`, app, document);
 
   // Server configuration
-  const port = process.env.PORT || 3000;
+  const port = parseInt(process.env.DATA_API_PORT || '3000', 10);
   await app.listen(port);
 
+  // Logs for debugging and confirmation
   Logger.log(`🚀 Data API is running on: http://localhost:${port}/${globalPrefix}`);
   Logger.log(`📚 Swagger docs available at: http://localhost:${port}/${globalPrefix}/docs`);
+  Logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  Logger.log(`CORS Allowed Origins: ${allowedOrigins}`);
 }
 
 bootstrap();

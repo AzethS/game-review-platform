@@ -15,14 +15,19 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@fairys-nx-workshop/common": ["libs/frontend/common/src/index.ts"],
-      "@fairys-nx-workshop/features": ["libs/frontend/features/src/index.ts"],
-      "@fairys-nx-workshop/game": ["libs/game-review/features/src/index.ts"],
-      "@fairys-nx-workshop/game-review": ["libs/game-review/src/index.ts"],
-      "@fairys-nx-workshop/ui": ["libs/frontend/ui/src/index.ts"],
+      "@fairys-nx-workshop/common": [
+        "libs/game-review-platform/common/src/index.ts"
+      ],
+      "@fairys-nx-workshop/features": [
+        "libs/game-review-platform/features/src/index.ts"
+      ],
+      "@fairys-nx-workshop/ui": ["libs/game-review-platform/ui/src/index.ts"],
       "@game-platform/backend/dto": ["libs/backend/dto/src/index.ts"],
       "@game-platform/backend/features": ["libs/backend/features/src/index.ts"],
-      "@game-platform/shared/api": ["libs/shared/api/src/index.ts"]
+      "@game-platform/shared/api": ["libs/shared/api/src/index.ts"],
+      "@game-review-platform/shared/util-env": [
+        "libs/shared/util-env/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

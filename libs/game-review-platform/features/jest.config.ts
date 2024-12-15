@@ -1,8 +1,8 @@
 export default {
-  displayName: 'common',
+  displayName: 'features',
   preset: '../../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../../coverage/libs/frontend/common',
+  coverageDirectory: '../../../coverage/libs/game-review-platform/features',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

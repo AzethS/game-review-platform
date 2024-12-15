@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
-import { ApiResponse, IGame } from './shared/api/src';
+import { ApiResponse, IGame } from '@game-platform/shared/api';
+import { environment } from '@game-review-platform/shared/util-env';
 
 /**
  * HTTP options for requests
@@ -17,7 +18,7 @@ export const httpOptions = {
  */
 @Injectable()
 export class GameService {
-  endpoint = 'http://localhost:3000/api/games'; // Base URL for the game API
+  endpoint = `${environment.dataApiUrl}/games`; // Base URL for the game API
 
   constructor(private readonly http: HttpClient) {}
 
