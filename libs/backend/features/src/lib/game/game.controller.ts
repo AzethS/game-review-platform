@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { GameService } from './game.service';
-import { CreateGameDto } from '@game-platform/backend/dto';
+import { CreateGameDto, CreateReviewDto } from '@game-platform/backend/dto';
 import { Game } from './game.schema';
 
 @Controller('games')
@@ -20,6 +20,14 @@ export class GameController {
   @Post()
   async create(@Body() createGameDto: CreateGameDto): Promise<Game> {
     return this.gameService.create(createGameDto);
+  }
+
+  @Post(':id/reviews')
+  async addReview(
+    @Param('id') id: string,
+    @Body() reviewDto: CreateReviewDto,
+  ): Promise<Game> {
+    return this.gameService.addReview(id, reviewDto);
   }
 
   @Delete(':id')

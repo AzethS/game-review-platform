@@ -4,9 +4,11 @@ import {
   IsEnum,
   IsDate,
   IsOptional,
+  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ICreateGame, IUpdateGame, GameGenre } from '@game-platform/shared/api';
+import { Types } from 'mongoose'; // Import Types for ObjectId
 
 /**
  * DTO for creating a new game
@@ -24,18 +26,18 @@ export class CreateGameDto implements ICreateGame {
   @IsNotEmpty()
   genre!: GameGenre;
 
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  platform!: string;
+  platform!: Types.ObjectId; // Reference to Platform
 
   @IsDate()
-  @Type(() => Date) // Converts incoming string to Date object
+  @Type(() => Date)
   @IsNotEmpty()
   releaseDate!: Date;
 
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  createdBy!: string;
+  createdBy!: Types.ObjectId; // Reference to User
 }
 
 /**
@@ -54,12 +56,16 @@ export class UpdateGameDto implements IUpdateGame {
   @IsOptional()
   genre?: GameGenre;
 
-  @IsString()
+  @IsMongoId()
   @IsOptional()
-  platform?: string;
+  platform?: Types.ObjectId; // Reference to Platform
 
   @IsDate()
-  @Type(() => Date) // Converts incoming string to Date object
+  @Type(() => Date)
   @IsOptional()
   releaseDate?: Date;
+
+  @IsMongoId()
+  @IsOptional()
+  createdBy?: Types.ObjectId; // Reference to User
 }

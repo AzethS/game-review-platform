@@ -1,8 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { GameGenre } from '@game-platform/shared/api';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type GameDocument = HydratedDocument<Game>;
+
+// Embedded Review class
+class EmbeddedReview {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId!: Types.ObjectId;
+
+  @Prop({ required: true, min: 0, max: 5 })
+  rating!: number;
+
+  @Prop()
+  comment?: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt!: Date;
+}
 
 @Schema()
 export class Game {
@@ -12,17 +26,24 @@ export class Game {
   @Prop({ required: true })
   description!: string;
 
-  @Prop({ required: true, type: String, enum: GameGenre }) // Explicitly specify the type
-  genre!: GameGenre;
-
   @Prop({ required: true })
-  platform!: string;
+  genre!: string;
 
-  @Prop({ type: Date, required: true })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Platform' }], required: true }) // Reference to Platform
+  platform!: Types.ObjectId[]; // Array to handle multiple platforms
+
+  @Prop({ type: Date, default: Date.now })
   releaseDate!: Date;
 
-  @Prop({ required: true })
-  createdBy!: string;
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User', // Reference to User
+    required: true,
+  })
+  createdBy!: Types.ObjectId;
+
+  @Prop({ type: [EmbeddedReview], default: [] }) // Embedded reviews
+  reviews!: EmbeddedReview[];
 }
 
 export const GameSchema = SchemaFactory.createForClass(Game);
