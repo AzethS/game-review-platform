@@ -1,0 +1,48 @@
+<div class="container mx-auto px-4 flex">
+    <div class="flex gap-4 mx-auto">
+      <div *ngIf="event" class="container mx-auto mt-5 p-4">
+        <athlete-xperience-card>
+          <img src="https://picsum.photos/400/300?random={{event.id}}" alt="Random Image" class="w-full h-auto" onerror="this.onerror=null;this.src='fallback-image-url';">
+    
+            <h2 class="font-bold text-lg">{{ event.name }}</h2>
+            <p>Location: {{ event.location }}</p>
+            <p>Description: {{ event.description }}</p>
+            <p>Start Date: {{ event.startDate | date:'medium' }}</p>
+            <p>End Date: {{ event.endDate | date:'medium' }}</p>
+            <p><strong>Capacity:</strong> {{ event.capacity }}</p>
+            <p><strong>Event Type:</strong> {{ event.eventType }}</p>
+            <p><strong>Registration Deadline:</strong> {{ event.registrationDeadline | date:'medium' }}</p>
+            <!-- <div *ngIf="event.registrations">
+                <p><strong>Registrations:</strong></p>
+                <ul *ngFor="let registration of event.registrations">
+                    <li 
+                    >{{ registration.name }}</li> -->
+                    <!-- *ngFor="let registration of event.registrations" -->
+                <!-- </ul>
+            </div> -->
+
+  
+            <div class="flex space-x-2 my-3">
+              <div *ngIf="currentUser && (currentUser.role === 'Admin' || event.authorId === currentUser.sub)" class="flex space-x-2 my-3">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <a routerLink="/Event/Edit/{{event.id}}">
+                    Edit Event
+                </a>
+                </button>
+                <button (click)="deleteEvent(event.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Delete Event
+                </button>
+              </div>
+              <div class="flex space-x-2 my-3">
+                <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                  <a routerLink="/Events">
+                    Back
+                  </a>
+                </button>
+              </div>
+            </div>
+        </athlete-xperience-card>
+      </div>
+    </div>
+  </div>
+  

@@ -1,0 +1,47 @@
+<div class="container mx-auto px-4 flex flex-col md:flex-row">
+  <div class="flex gap-4 mx-auto">
+    <div *ngIf="training" class="container mx-auto mt-5 p-4">
+      <athlete-xperience-card>
+        <img src="https://picsum.photos/400/300?random={{training}}" alt="Random Image" class="w-full h-auto" onerror="this.onerror=null;this.src='fallback-image-url';">
+
+        <h2 class="font-bold text-lg">{{ training.name }}</h2>
+        <p>Beschrijving: {{ training.description }}</p>
+        <p>Type: {{ training.type }}</p>
+        <p>Duur: {{ training.duration }}</p>
+        <p>Locatie: {{ training.location }}</p>
+        <p>Date: {{ training.date | date : 'long' }}</p>
+        <p>Top related: {{ training.isTopRated }}</p>
+        <p *ngIf="trainer">Trainer: {{ trainer.name }}</p>
+        <div *ngIf="training.members && training.members.length">
+          <p class="font-medium">Members:</p>
+          <ul *ngFor="let member of members">
+            <li>{{ member.name }}</li>
+          </ul>
+        </div>
+
+        <div class="flex flex-col md:flex-row space-x-2 my-3">
+          <div *ngIf="currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Trainer' )" class="flex space-x-2 my-3">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              <a routerLink="/Trainings/Edit/{{training.id}}">
+                Edit Training
+              </a>
+            </button>
+            <button (click)="deleteTraining(training.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+              Delete Training
+            </button>
+          </div>
+          <div class="flex space-x-2 my-3">
+            <button (click)="toggleRegistration()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+              {{ isRegistered ? 'Remove Registration' : 'Register for Training' }}
+            </button>
+            <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              <a routerLink="/">
+                Back
+              </a>
+            </button>
+          </div>
+        </div>
+      </athlete-xperience-card>
+    </div>
+  </div>
+</div>

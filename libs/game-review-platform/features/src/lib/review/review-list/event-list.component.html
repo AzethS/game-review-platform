@@ -1,0 +1,19 @@
+<div *ngIf="currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Trainer')" class="m-5 text-right">
+    <a routerLink="/Event/Create" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer">
+      Create Event
+    </a>
+</div>
+<div class="container mx-auto px-4 flex">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-auto">
+      <div *ngFor="let event of events" (click)="goToEventDetail(event.id)">
+        <athlete-xperience-card>
+          <img src="https://picsum.photos/400/300?random={{event.id}}" alt="Event Image" class="w-full h-auto" onerror="this.onerror=null;this.src='fallback-image-url';">
+          <h2 class="font-bold text-lg">{{ event.name }}</h2>
+          <p>Location: {{ event.location }}</p>
+          <p>Description: {{ event.description }}</p>
+          <!-- Additional event details here -->
+        </athlete-xperience-card>
+      </div>
+    </div>
+</div>
+  
