@@ -5,10 +5,15 @@ import {
   IsDate,
   IsOptional,
   IsMongoId,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ICreateGame, IUpdateGame, GameGenre } from '@game-platform/shared/api';
-import { Types } from 'mongoose'; // Import Types for ObjectId
+import {
+  ICreateGame,
+  IUpdateGame,
+  IUpsertGame,
+  GameGenre,
+} from '@game-platform/shared/api';
 
 /**
  * DTO for creating a new game
@@ -24,11 +29,12 @@ export class CreateGameDto implements ICreateGame {
 
   @IsEnum(GameGenre)
   @IsNotEmpty()
-  genre!: GameGenre;
+  genre!: GameGenre[];
 
-  @IsMongoId()
   @IsNotEmpty()
-  platform!: Types.ObjectId; // Reference to Platform
+  @IsArray()
+  @IsMongoId({ each: true })
+  platform!: string[]; // Reference to Platform
 
   @IsDate()
   @Type(() => Date)
@@ -37,7 +43,12 @@ export class CreateGameDto implements ICreateGame {
 
   @IsMongoId()
   @IsNotEmpty()
-  createdBy!: Types.ObjectId; // Reference to User
+  createdBy!: string; // Reference to Company
+
+  @IsNotEmpty()
+  @IsArray()
+  @IsMongoId({ each: true })
+  reviews!: string[]; // Reference to reviews
 }
 
 /**
@@ -54,11 +65,12 @@ export class UpdateGameDto implements IUpdateGame {
 
   @IsEnum(GameGenre)
   @IsOptional()
-  genre?: GameGenre;
+  @IsArray()
+  genre?: GameGenre[];
 
   @IsMongoId()
   @IsOptional()
-  platform?: Types.ObjectId; // Reference to Platform
+  platform?: string[]; // Reference to Platform
 
   @IsDate()
   @Type(() => Date)
@@ -67,5 +79,41 @@ export class UpdateGameDto implements IUpdateGame {
 
   @IsMongoId()
   @IsOptional()
-  createdBy?: Types.ObjectId; // Reference to User
+  createdBy?: string; // Reference to Company
+}
+export class UpsertGameDto implements IUpsertGame {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
+
+  @IsEnum(GameGenre)
+  @IsNotEmpty()
+  genre!: GameGenre[];
+
+  @IsNotEmpty()
+  @IsArray()
+  @IsMongoId({ each: true })
+  platform!: string[]; // Reference to Platform
+
+  @IsDate()
+  @Type(() => Date)
+  @IsNotEmpty()
+  releaseDate!: Date;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  createdBy!: string; // Reference to Company
+
+  @IsNotEmpty()
+  @IsArray()
+  @IsMongoId({ each: true })
+  reviews!: string[]; // Reference to reviews
 }

@@ -1,28 +1,42 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
-import { HydratedDocument } from 'mongoose';
+import * as mongoose from 'mongoose';
 
-export type PlatformDocument = HydratedDocument<Platform>;
+const { Schema, model, Types } = mongoose;
 
-@Schema()
-export class Platform {
-  @Prop({ required: true })
-  name!: string;
+// Platform Schema Definition
+export const PlatformSchema = new Schema(
+  {
+    name: { 
+      type: String, 
+      required: true, 
+      trim: true, 
+    }, // Platform name, required
 
-  @Prop()
-  description?: string;
+    description: { 
+      type: String, 
+      maxlength: 500, // Optional description with a max length
+    }, // Platform description
 
-  @Prop({ type: [Types.ObjectId], ref: 'Game', default: [] }) // Many-to-many relationship
-  games!: Types.ObjectId[];
-}
+    games: [{ 
+      type: Types.ObjectId, 
+      ref: 'Game', 
+      default: [], 
+    }], // References to Game collection
+  },
+  { 
+    versionKey: false, 
+    timestamps: { createdAt: true, updatedAt: true } // Add both createdAt and updatedAt
+  }
+);
 
-const PlatformSchema = SchemaFactory.createForClass(Platform);
-
-// Map `_id` to `id`
+// Virtual ID field for cleaner access
 PlatformSchema.virtual('id').get(function () {
   return this._id ? this._id.toHexString() : null;
 });
 
-// Ensure `virtuals` are included in JSON responses
-PlatformSchema.set('toJSON', { virtuals: true });
-export { PlatformSchema };
+// Ensure virtuals are included when converting to JSON
+PlatformSchema.set('toJSON', {
+  virtuals: true,
+});
+
+// Export the Platform Model
+export const PlatformModel = model('Platform', PlatformSchema);

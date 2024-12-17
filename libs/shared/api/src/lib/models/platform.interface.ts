@@ -1,14 +1,16 @@
-import { Types } from 'mongoose';
+import { Id } from './id.type';
 
+
+type Game = Id;
 export interface IPlatform {
   id: string;
   name: string;
   description?: string;
-  games: Types.ObjectId[]; // References to games
+  games: Game[]; // References to games
 }
 
-export type ICreatePlatform = Pick<IPlatform, 'name' | 'description'>;
+export type ICreatePlatform = Pick<IPlatform, 'name' | 'description' | 'games'>;
 
-export type IUpdatePlatform = Partial<Omit<IPlatform, 'id' | 'games'>>;
+export type IUpdatePlatform = Partial<Omit<IPlatform, 'id' >>;
 
 export type IUpsertPlatform = IPlatform;

@@ -1,9 +1,13 @@
-import { Types } from 'mongoose';
+import { Id } from './id.type';
+
+
+type User = Id;
+type Game = Id;
 
 export interface IReview {
   id: string;
-  userId: Types.ObjectId; // Reference to User collection
-  gameId: Types.ObjectId; // Reference to Game collection
+  userId: User; // Reference to User collection
+  gameId: Game; // Reference to Game collection
   rating: number; // Between 0 and 5
   comment?: string; // Optional comment
   createdAt: Date;

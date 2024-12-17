@@ -1,49 +1,37 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { GameGenre } from '@game-platform/shared/api';
 
-export type GameDocument = HydratedDocument<Game>;
+const { Schema, model, Types } = mongoose;
 
-// Embedded Review class
-class EmbeddedReview {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId!: Types.ObjectId;
+// Game Schema Definition
+export const GameSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    genre: { 
+      type: [{ type: String, enum: Object.values(GameGenre) }], 
+      required: true,
+    },
+    platform: [{ type: Types.ObjectId, ref: 'Platform', required: true }], // Reference to Platform collection
+    releaseDate: { type: Date, required: true },
+    createdBy: { type: Types.ObjectId, ref: 'Company', required: true }, // Reference to Company collection
+    reviews: [{ type: Types.ObjectId, ref: 'Review' }], // Reference to Review collection
+  },
+  { 
+    versionKey: false, 
+    timestamps: true // Automatically add createdAt and updatedAt fields
+  }
+);
 
-  @Prop({ required: true, min: 0, max: 5 })
-  rating!: number;
+// Virtual ID field for cleaner access
+GameSchema.virtual('id').get(function () {
+  return this._id ? this._id.toHexString() : null;
+});
 
-  @Prop()
-  comment?: string;
+// Ensure virtuals are included when converting to JSON
+GameSchema.set('toJSON', {
+  virtuals: true,
+});
 
-  @Prop({ type: Date, default: Date.now })
-  createdAt!: Date;
-}
-
-@Schema()
-export class Game {
-  @Prop({ required: true })
-  title!: string;
-
-  @Prop({ required: true })
-  description!: string;
-
-  @Prop({ required: true })
-  genre!: string;
-
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Platform' }], required: true }) // Reference to Platform
-  platform!: Types.ObjectId[]; // Array to handle multiple platforms
-
-  @Prop({ type: Date, default: Date.now })
-  releaseDate!: Date;
-
-  @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'User', // Reference to User
-    required: true,
-  })
-  createdBy!: Types.ObjectId;
-
-  @Prop({ type: [EmbeddedReview], default: [] }) // Embedded reviews
-  reviews!: EmbeddedReview[];
-}
-
-export const GameSchema = SchemaFactory.createForClass(Game);
+// Export the Game Model
+export const GameModel = model('Game', GameSchema);

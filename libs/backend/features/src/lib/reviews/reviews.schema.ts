@@ -1,35 +1,49 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import * as mongoose from 'mongoose';
 
-export type ReviewDocument = HydratedDocument<Review>;
+const { Schema, model, Types } = mongoose;
 
-@Schema()
-export class Review {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId!: Types.ObjectId; // Reference to User collection
+// Review Schema Definition
+export const ReviewSchema = new Schema(
+  {
+    userId: { 
+      type: Types.ObjectId, 
+      ref: 'User', 
+      required: true, 
+    }, // Reference to User collection
 
-  @Prop({ type: Types.ObjectId, ref: 'Game', required: true })
-  gameId!: Types.ObjectId; // Reference to Game collection
+    gameId: { 
+      type: Types.ObjectId, 
+      ref: 'Game', 
+      required: true, 
+    }, // Reference to Game collection
 
-  @Prop({ required: true, min: 0, max: 5 })
-  rating!: number;
+    rating: { 
+      type: Number, 
+      required: true, 
+      min: 0, 
+      max: 5, // Rating between 0 and 5
+    },
 
-  @Prop()
-  comment?: string;
+    comment: { 
+      type: String, 
+      maxlength: 500, // Optional comment with a maximum length
+    },
+  },
+  { 
+    versionKey: false, 
+    timestamps: { createdAt: true, updatedAt: false } // Include only `createdAt`
+  }
+);
 
-  @Prop({ type: Date, default: Date.now })
-  createdAt!: Date;
-}
-
-const ReviewSchema = SchemaFactory.createForClass(Review);
-
-// Map virtual 'id' safely to `_id`
+// Virtual ID field for cleaner access
 ReviewSchema.virtual('id').get(function () {
-  return this._id?.toHexString();
+  return this._id ? this._id.toHexString() : null;
 });
 
-// Include virtuals in JSON and Object outputs
-ReviewSchema.set('toJSON', { virtuals: true });
-ReviewSchema.set('toObject', { virtuals: true });
+// Ensure virtuals are included when converting to JSON
+ReviewSchema.set('toJSON', {
+  virtuals: true,
+});
 
-export { ReviewSchema };
+// Export the Review Model
+export const ReviewModel = model('Review', ReviewSchema);

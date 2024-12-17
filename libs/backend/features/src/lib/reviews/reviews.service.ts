@@ -1,117 +1,182 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Review, ReviewDocument } from './reviews.schema';
-import { Game, GameDocument } from '../game/game.schema';
+import { Model, isValidObjectId } from 'mongoose';
+import { IReview, Id } from '@game-platform/shared/api';
 import { CreateReviewDto, UpdateReviewDto } from '@game-platform/backend/dto';
-import { IReview } from '@game-platform/shared/api';
 
 @Injectable()
 export class ReviewService {
   private readonly logger = new Logger(ReviewService.name);
 
-  constructor(
-    @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
-    @InjectModel(Game.name) private gameModel: Model<GameDocument>,
-  ) {}
+  constructor(@InjectModel('Review') private readonly reviewModel: Model<IReview>) {}
 
-  private toIReview(review: ReviewDocument): IReview {
+  /**
+   * Convert Mongoose document to IReview
+   */
+  private toIReview(review: any): IReview {
+    const reviewObject = review.toObject();
     return {
-      id: review.id,
-      userId: review.userId instanceof Types.ObjectId ? review.userId : new Types.ObjectId(review.userId),
-      gameId: review.gameId instanceof Types.ObjectId ? review.gameId : new Types.ObjectId(review.gameId),
-      rating: review.rating,
-      comment: review.comment,
-      createdAt: review.createdAt,
+      ...reviewObject,
+      id: reviewObject._id.toHexString(),
     };
   }
 
+  /**
+   * Create a new review
+   */
+  async create(createReviewDto: CreateReviewDto): Promise<string> {
+    try {
+      const newReview = new this.reviewModel(createReviewDto);
+      const savedReview = await newReview.save();
+      return savedReview._id.toHexString();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to create review.');
+    }
+  }
+
+  /**
+   * Retrieve all reviews
+   */
   async getAll(): Promise<IReview[]> {
-    const reviews = await this.reviewModel
-      .find()
-      .populate('userId', 'username')
-      .populate('gameId', 'title')
-      .exec();
-    return reviews.map(this.toIReview);
+    try {
+      const reviews = await this.reviewModel.find().populate('userId gameId').exec();
+      return reviews.map(this.toIReview);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to retrieve reviews.');
+    }
   }
 
+  /**
+   * Retrieve a single review by ID
+   */
   async getOne(id: string): Promise<IReview> {
-    const review = await this.reviewModel
-      .findById(id)
-      .populate('userId', 'username')
-      .populate('gameId', 'title')
-      .exec();
-    if (!review) {
-      throw new NotFoundException(`Review with ID ${id} not found`);
+    try {
+      if (!isValidObjectId(id)) {
+        throw new BadRequestException('Invalid ID format.');
+      }
+
+      const review = await this.reviewModel.findById(id).populate('userId gameId').exec();
+      if (!review) {
+        throw new NotFoundException(`Review with ID ${id} not found.`);
+      }
+
+      return this.toIReview(review);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to retrieve review with ID ${id}.`);
     }
-    return this.toIReview(review);
   }
 
   /**
-   * Create a new review.
+   * Update a review by ID
    */
-  async create(createReviewDto: CreateReviewDto): Promise<IReview> {
-    const newReview = new this.reviewModel({
-      ...createReviewDto,
-      userId: new Types.ObjectId(createReviewDto.userId),
-      gameId: new Types.ObjectId(createReviewDto.gameId),
-    });
-    const savedReview = await newReview.save();
+  async update(id: string, updateReviewDto: UpdateReviewDto): Promise<string> {
+    try {
+      const updatedReview = await this.reviewModel
+        .findByIdAndUpdate(id, updateReviewDto, { new: true })
+        .exec();
 
-    // Push review into the embedded reviews in Game
-    await this.gameModel.findByIdAndUpdate(
-      createReviewDto.gameId,
-      {
-        $push: {
-          reviews: {
-            userId: createReviewDto.userId,
-            rating: createReviewDto.rating,
-            comment: createReviewDto.comment,
-            createdAt: new Date(),
-          },
-        },
-      },
-      { new: true },
-    );
+      if (!updatedReview) {
+        throw new NotFoundException(`Review with ID ${id} not found.`);
+      }
 
-    return this.toIReview(savedReview);
-  }
-
-  /**
-   * Update a review.
-   */
-  async update(id: string, updateReviewDto: UpdateReviewDto): Promise<IReview> {
-    const updatedReview = await this.reviewModel
-      .findByIdAndUpdate(id, updateReviewDto, { new: true })
-      .exec();
-
-    if (!updatedReview) {
-      throw new NotFoundException(`Review with ID ${id} not found`);
+      return updatedReview._id.toHexString();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to update review with ID ${id}.`);
     }
-    return this.toIReview(updatedReview);
   }
 
   /**
-   * Delete a review.
+   * Delete a review by ID
    */
   async delete(id: string): Promise<void> {
-    const deletedReview = await this.reviewModel.findByIdAndDelete(id).exec();
-    if (!deletedReview) {
-      throw new NotFoundException(`Review with ID ${id} not found`);
+    try {
+      const deletedReview = await this.reviewModel.findByIdAndDelete(id).exec();
+      if (!deletedReview) {
+        throw new NotFoundException(`Review with ID ${id} not found.`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to delete review with ID ${id}.`);
     }
+  }
 
-    // Remove from embedded reviews in Game
-    await this.gameModel.findByIdAndUpdate(
-      deletedReview.gameId,
-      {
-        $pull: {
-          reviews: {
-            userId: deletedReview.userId,
-            createdAt: deletedReview.createdAt,
-          },
-        },
-      },
-      { new: true },
-    );
+  /**
+   * Retrieve all reviews by a specific user
+   */
+  async getReviewsByUser(userId: Id): Promise<IReview[]> {
+    try {
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException('Invalid User ID format.');
+      }
+
+      const reviews = await this.reviewModel.find({ userId }).populate('gameId').exec();
+      return reviews.map(this.toIReview);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to retrieve reviews for User ID ${userId}.`);
+    }
+  }
+
+  /**
+   * Retrieve all reviews for a specific game
+   */
+  async getReviewsByGame(gameId: Id): Promise<IReview[]> {
+    try {
+      if (!isValidObjectId(gameId)) {
+        throw new BadRequestException('Invalid Game ID format.');
+      }
+
+      const reviews = await this.reviewModel.find({ gameId }).populate('userId').exec();
+      return reviews.map(this.toIReview);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to retrieve reviews for Game ID ${gameId}.`);
+    }
+  }
+
+  /**
+   * Retrieve average rating for a specific game
+   */
+  async getAverageRating(gameId: Id): Promise<number> {
+    try {
+      if (!isValidObjectId(gameId)) {
+        throw new BadRequestException('Invalid Game ID format.');
+      }
+
+      const result = await this.reviewModel.aggregate([
+        { $match: { gameId: gameId } },
+        { $group: { _id: null, averageRating: { $avg: '$rating' } } },
+      ]);
+
+      return result.length > 0 ? result[0].averageRating : 0;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to calculate average rating for Game ID ${gameId}.`);
+    }
   }
 }

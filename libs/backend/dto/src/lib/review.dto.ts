@@ -1,16 +1,16 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, Max, Min, IsMongoId } from 'class-validator';
 import { ICreateReview, IUpdateReview } from '@game-platform/shared/api';
-import { Types } from 'mongoose';
+
 
 
 export class CreateReviewDto implements ICreateReview {
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  userId!: Types.ObjectId;
+  userId!: string;
 
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  gameId!: Types.ObjectId;
+  gameId!: string;
 
   @IsNumber()
   @Min(0)
@@ -24,13 +24,13 @@ export class CreateReviewDto implements ICreateReview {
 }
 
 export class UpdateReviewDto implements IUpdateReview {
-  @IsString()
-  @IsOptional()
-  userId?: Types.ObjectId;
+  @IsMongoId()
+  @IsNotEmpty()
+  userId!: string;
 
-  @IsString()
-  @IsOptional()
-  gameId?: Types.ObjectId;
+  @IsMongoId()
+  @IsNotEmpty()
+  gameId!: string;
 
   @IsNumber()
   @Min(0)

@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { Id } from './id.type';
 
 export enum GameGenre {
   Action = 'Action',
@@ -10,28 +10,24 @@ export enum GameGenre {
   Other = 'Other',
 }
 
-// Embedded Review inside Game
-export interface IEmbeddedReview {
-  userId: Types.ObjectId; // Reference to User
-  rating: number;
-  comment?: string;
-  createdAt: Date;
-}
+type Platform = Id;
+type Review = Id;
+type Company = Id;
 
 export interface IGame {
   id: string;
   title: string;
   description: string;
-  genre: GameGenre;
-  platform: Types.ObjectId; // Reference to Platform collection
+  genre: GameGenre[];
+  platform: Platform[]; // Reference to Platform collection
   releaseDate: Date;
-  createdBy: Types.ObjectId; // Reference to User collection
-  reviews: IEmbeddedReview[]; // Embedded reviews
+  createdBy: Company; // Reference to Company collection
+  reviews: Review[]; // Reference to reviews
 }
 
 export type ICreateGame = Pick<
   IGame,
-  'title' | 'description' | 'genre' | 'platform' | 'releaseDate' | 'createdBy'
+  'title' | 'description' | 'genre' | 'platform' | 'releaseDate' | 'createdBy' | 'reviews'
 >;
 
 export type IUpdateGame = Partial<Omit<IGame, 'id'>>;

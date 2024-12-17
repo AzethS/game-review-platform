@@ -14,7 +14,7 @@ async function bootstrap() {
 
   // Define allowed CORS origins based on environment
   const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ['https://your-production-frontend.com'] // Replace with production frontend URL
+    ? ['https://your-production-frontend.com'] 
     : ['http://localhost:4200']; // Development Frontend URL
 
   // Enable CORS with dynamic origins

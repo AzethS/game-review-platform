@@ -1,115 +1,176 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Game, GameDocument } from './game.schema';
-import { User, UserDocument } from '../users/users.schema'; // Import User schema
 import {
-  CreateGameDto,
-  UpdateGameDto,
-  CreateReviewDto,
-} from '@game-platform/backend/dto';
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, isValidObjectId } from 'mongoose';
+import { IGame, Id } from '@game-platform/shared/api';
+import { CreateGameDto, UpdateGameDto } from '@game-platform/backend/dto';
 
 @Injectable()
 export class GameService {
   private readonly logger = new Logger(GameService.name);
 
-  constructor(
-    @InjectModel(Game.name) private gameModel: Model<GameDocument>,
-    @InjectModel(User.name) private userModel: Model<UserDocument> // Inject User model
-  ) {}
+  constructor(@InjectModel('Game') private readonly gameModel: Model<IGame>) {}
 
-  /**
-   * Retrieve all games with populated references to Platform and User.
-   */
-  async getAll(): Promise<Game[]> {
-    this.logger.log('Fetching all games with references');
-    return this.gameModel
-      .find()
-      .populate('platform') // Populate Platform reference
-      .populate('createdBy') // Populate User reference
-      .exec();
+  // Convert Mongoose document to IGame
+  private toIGame(game: any): IGame {
+    const gameObject = game.toObject();
+    return {
+      ...gameObject,
+      id: gameObject._id.toHexString(),
+    };
   }
 
   /**
-   * Retrieve a single game by ID with populated references.
+   * Create a new game
    */
-  async getOne(id: string): Promise<Game> {
-    this.logger.log(`Fetching game with ID: ${id}`);
-    const game = await this.gameModel
-      .findById(id)
-      .populate('platform') // Populate Platform reference
-      .populate('createdBy') // Populate User reference
-      .exec();
-    if (!game) {
-      throw new NotFoundException(`Game with ID ${id} not found`);
+  async create(createGameDto: CreateGameDto): Promise<string> {
+    try {
+      const newGame = new this.gameModel(createGameDto);
+      const savedGame = await newGame.save();
+      return savedGame._id.toHexString();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to create game.');
     }
-    return game;
   }
 
   /**
-   * Create a new game with references to Platform and User.
+   * Retrieve all games
    */
-  async create(createGameDto: CreateGameDto): Promise<Game> {
-    const newGame = new this.gameModel(createGameDto);
-    const savedGame = await newGame.save();
+  async getAll(): Promise<IGame[]> {
+    try {
+      const games = await this.gameModel
+        .find()
+        .populate('platform')
+        .populate('createdBy')
+        .populate('reviews')
+        .exec();
 
-    // Add game to the user's games array
-    await this.userModel.findByIdAndUpdate(
-      createGameDto.createdBy,
-      { $push: { games: savedGame._id } },
-      { new: true }
-    );
-
-    return savedGame;
-  }
-
-  /**
-   * Update an existing game.
-   */
-  async update(id: string, updateGameDto: UpdateGameDto): Promise<Game> {
-    this.logger.log(`Updating game with ID: ${id}`);
-    const updatedGame = await this.gameModel
-      .findByIdAndUpdate(id, updateGameDto, { new: true })
-      .populate('platform')
-      .populate('createdBy')
-      .exec();
-
-    if (!updatedGame) {
-      throw new NotFoundException(`Game with ID ${id} not found`);
+      return games.map(this.toIGame);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to retrieve games.');
     }
-
-    return updatedGame;
   }
 
   /**
-   * Add a review to an existing game.
+   * Retrieve a single game by ID
    */
-  async addReview(id: string, reviewDto: CreateReviewDto): Promise<Game> {
-    this.logger.log(`Adding review to game with ID: ${id}`);
-    const game = await this.gameModel.findById(id).exec();
-    if (!game) {
-      throw new NotFoundException(`Game with ID ${id} not found`);
+  async getOne(id: string): Promise<IGame> {
+    try {
+      if (!isValidObjectId(id)) {
+        throw new BadRequestException('Invalid ID format.');
+      }
+
+      const game = await this.gameModel
+        .findById(id)
+        .populate('platform')
+        .populate('createdBy')
+        .populate('reviews')
+        .exec();
+
+      if (!game) {
+        throw new NotFoundException(`Game with ID ${id} not found.`);
+      }
+
+      return this.toIGame(game);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to retrieve game with ID ${id}.`);
     }
-
-    // Push the review into the embedded reviews array
-    game.reviews.push({
-      userId: reviewDto.userId,
-      rating: reviewDto.rating,
-      comment: reviewDto.comment,
-      createdAt: new Date(),
-    });
-
-    return game.save();
   }
 
   /**
-   * Delete a game by ID.
+   * Update a game by ID
+   */
+  async update(id: string, updateGameDto: UpdateGameDto): Promise<string> {
+    try {
+      const updatedGame = await this.gameModel
+        .findByIdAndUpdate(id, updateGameDto, { new: true })
+        .exec();
+
+      if (!updatedGame) {
+        throw new NotFoundException(`Game with ID ${id} not found.`);
+      }
+
+      return updatedGame._id.toHexString();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to update game with ID ${id}.`);
+    }
+  }
+
+  /**
+   * Delete a game by ID
    */
   async delete(id: string): Promise<void> {
-    this.logger.log(`Deleting game with ID: ${id}`);
-    const result = await this.gameModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new NotFoundException(`Game with ID ${id} not found`);
+    try {
+      const deletedGame = await this.gameModel.findByIdAndDelete(id).exec();
+
+      if (!deletedGame) {
+        throw new NotFoundException(`Game with ID ${id} not found.`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException(`Failed to delete game with ID ${id}.`);
+    }
+  }
+
+  /**
+   * Add a platform to a game
+   */
+  async addPlatform(gameId: Id, platformId: Id): Promise<IGame> {
+    try {
+      const game = await this.gameModel.findById(gameId).exec();
+      if (!game) {
+        throw new NotFoundException(`Game with ID ${gameId} not found.`);
+      }
+
+      if (!game.platform.includes(platformId)) {
+        game.platform.push(platformId);
+      }
+      await game.save();
+      return this.toIGame(game);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to add platform to game.');
+    }
+  }
+
+  /**
+   * Remove a platform from a game
+   */
+  async removePlatform(gameId: Id, platformId: Id): Promise<IGame> {
+    try {
+      const game = await this.gameModel.findById(gameId).exec();
+      if (!game) {
+        throw new NotFoundException(`Game with ID ${gameId} not found.`);
+      }
+
+      game.platform = game.platform.filter((id) => id.toString() !== platformId);
+      await game.save();
+      return this.toIGame(game);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Failed to remove platform from game.');
     }
   }
 }

@@ -1,46 +1,65 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Controller, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { UserService } from './users.service';
-import { CreateUserDto, UpdateUserDto } from '@game-platform/backend/dto';
-import { IUser } from '@game-platform/shared/api';
+import { Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
+import { IUser, Role } from '@game-platform/shared/api';
+import { ChangePasswordDto, CreateUserDto, UpdateUserDto, ValidateUserDto } from '@game-platform/backend/dto';
+import { AuthGuard, Public } from '../auth/auth.guard';
+import { Roles } from '../auth/roles.guard';
 
-@Controller('users')
+@Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+    constructor(private userService: UserService) {}
 
-  @Get()
-  async getAll(): Promise<IUser[]> {
-    return this.userService.getAll();
-  }
+    // @UseGuards(AuthGuard)
+    // @Roles(Role.Trainer, Role.Admin)
+    @Get('')
+    async getAll(): Promise<IUser[]> {
+        const products = await this.userService.getAll();
+        return products;
+    }
 
-  @Get(':id')
-  async getOne(@Param('id') id: string): Promise<IUser> {
-    return this.userService.getOne(id);
-  }
+    @Get('members')
+    async findAllMembers(): Promise<IUser[]> {
+      return await this.userService.getAllMembers();
+    }
 
-  @Post()
-  async create(@Body() createUserDto: CreateUserDto): Promise<IUser> {
-    return this.userService.create(createUserDto);
-  }
+    @Get(':id')
+    async getOne(@Param('id') id: string): Promise<IUser> {
+        return await this.userService.getOne(id);
+    }
 
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<IUser> {
-    return this.userService.update(id, updateUserDto);
-  }
+    @Post('')
+    async create(@Body() data: CreateUserDto) {
+        const generatedId = await this.userService.create(data);
+        return { id: generatedId};
+    }
 
-  @Delete(':id')
-  async delete(@Param('id') id: string): Promise<void> {
-    return this.userService.delete(id);
-  }
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() updateTrainingDto: UpdateUserDto) {
+        return await this.userService.update(id, updateTrainingDto);
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string) {
+        return await this.userService.delete(id);
+    }
+    
+    // @HttpCode(HttpStatus.OK)
+    // @Post('validate')
+    // async validateUser(@Body() validateUserDto: ValidateUserDto): Promise<any> {
+    //   const { emailAddress, password } = validateUserDto;
+    //   const user = await this.userService.validateUser(emailAddress, password);
+    //   if (!user) {
+    //     throw new BadRequestException('Invalid credentials');
+    //   }
+    //   return user;
+    // }
+  
+    @Patch(':id/change-password')
+    async changePassword(@Param('id') userId: string, @Body() changePasswordDto: ChangePasswordDto): Promise<any> {
+      const { currentPassword, newPassword } = changePasswordDto;
+      await this.userService.changePassword(userId, currentPassword, newPassword);
+      return { message: 'Password successfully changed' };
+    }
+
 }
