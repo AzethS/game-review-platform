@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'game-review-unauthorized',
+  selector: 'lib-game-review-unauthorized',
   templateUrl: './unauthorized.component.html',
   styles: [],
 })

@@ -2,11 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../user.service';
-import { IUser, Role } from '@Agamereview/shared/api';
+import { IUser, Role } from '@game-platform/shared/api';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
-  selector: 'gamereview-user-edit',
+  selector: 'lib-game-review-user-edit',
   templateUrl: './user-edit.component.html',
   styles: [],
 })

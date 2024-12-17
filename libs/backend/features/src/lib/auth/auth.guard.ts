@@ -1,4 +1,4 @@
-import { environment } from '@AthleteXperience/shared/util-env';
+import { environment } from '@game-review-platform/shared/util-env';
 import {
     CanActivate,
     ExecutionContext,

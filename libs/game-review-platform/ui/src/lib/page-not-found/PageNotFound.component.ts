@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'game-review-page-not-found',
+  selector: 'lib-game-review-page-not-found',
   templateUrl: './PageNotFound.component.html',
   styles: [],
 })

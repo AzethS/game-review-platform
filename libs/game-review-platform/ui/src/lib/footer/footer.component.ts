@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'game-review-footer',
+  selector: 'lib-game-review-footer',
   templateUrl: './footer.component.html',
   styles: [],
 })

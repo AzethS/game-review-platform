@@ -1,12 +1,12 @@
-import { IUser } from '@gamereview/shared/api';
+import { IUser } from '@game-platform/shared/api';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { Id } from '@gamereview/shared/api';
+import { Id } from '@game-platform/shared/api';
 import { Router } from '@angular/router';
 import { UserService } from '../user.service';
 
 @Component({
-  selector: 'gamereview-user-list',
+  selector: 'lib-game-review-user-list',
   templateUrl: './user-list.component.html',
   styles: [],
 })

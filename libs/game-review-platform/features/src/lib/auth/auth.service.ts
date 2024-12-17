@@ -1,11 +1,11 @@
 import { Observable, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, tap } from 'rxjs/operators';
-import { ApiResponse, IUser } from '@game-review/shared/api';
+import { ApiResponse, IUser } from '@game-platform/shared/api';
 import { Injectable } from '@angular/core';
 import { CookieService } from 'ngx-cookie-service';
 import { Router } from '@angular/router';
-import { environment } from '@game-review/shared/util-env';
+import { environment } from '@game-review-platform/shared/util-env';
 import { JwtPayload, jwtDecode } from 'jwt-decode';
 
 const httpOptions = {

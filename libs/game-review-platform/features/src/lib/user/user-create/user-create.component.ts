@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { UserService } from '../user.service';
-import { Role } from '@gamereview/shared/api';
+import { Role } from '@game-platform/shared/api';
 import { Router } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 
 
 @Component({
-  selector: 'gamereview-user-create',
+  selector: 'lib-game-review-user-create',
   templateUrl: './user-create.component.html',
   styles: [],
 })

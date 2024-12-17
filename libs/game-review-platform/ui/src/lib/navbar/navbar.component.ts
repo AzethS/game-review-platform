@@ -4,7 +4,7 @@ import { ThemeService } from '../theme/theme.service';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'agame-review-navbar',
+  selector: 'lib-game-review-navbar',
   templateUrl: './navbar.component.html',
   styles: [],
   // providers: [CookieService],

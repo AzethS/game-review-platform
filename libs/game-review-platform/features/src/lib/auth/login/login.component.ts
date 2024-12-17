@@ -3,7 +3,7 @@ import { AuthService } from '../auth.service';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'game-review-login',
+  selector: 'lib-game-review-login',
   templateUrl: './login.component.html',
   styles: [],
 })

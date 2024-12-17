@@ -1,29 +1,29 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
-import { UserService } from '../users/users.service';
 import { ValidateUserDto } from '@game-platform/backend/dto';
-import { JwtService } from '@nestjs/jwt';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Request, UseGuards } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthGuard, Public } from './auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly jwtService: JwtService,
-  ) {}
 
-  @Post('login')
-  async login(@Body() validateUserDto: ValidateUserDto) {
-    const user = await this.userService.validateUser(
-      validateUserDto.emailAddress,
-      validateUserDto.password,
-    );
+    constructor(private authService: AuthService) {}
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    @Public()
+    @HttpCode(HttpStatus.OK)
+    @Post('validate')
+    async validateUser(@Body() validateUserDto: ValidateUserDto): Promise<any> {
+        const { emailAddress, password } = validateUserDto;
+        const user = await this.authService.validateUser(emailAddress, password);
+        if (!user) {
+            throw new BadRequestException('Invalid credentials');
+        }
+        return user;
     }
 
-    const payload = { id: user.id, username: user.username, email: user.email };
-    return {
-      accessToken: this.jwtService.sign(payload),
-    };
-  }
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    async logout(@Req() req: Request) {
+        const token = (req.headers as { authorization?: string })?.authorization?.split(' ')[1] ?? '';
+        return this.authService.logout(token);
+    }
 }

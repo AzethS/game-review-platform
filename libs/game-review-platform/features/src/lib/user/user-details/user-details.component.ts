@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../user.service';
-import { IUser } from '@AthleteXperience/shared/api';
+import { IUser } from '@game-platform/shared/api';
 import { AuthService } from '../../auth/auth.service';
 
 
 @Component({
-  selector: 'gamereview-user-details',
+  selector: 'lib-game-review-user-details',
   templateUrl: './user-details.component.html',
   styles: [],
 })

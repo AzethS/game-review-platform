@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { UserService } from '../user/user.service';
+import { UserService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
