@@ -36,6 +36,7 @@ async function bootstrap() {
     .setTitle('Game Review Recommendation API')
     .setDescription('API for managing games, reviews, and recommendations')
     .setVersion('1.0')
+    .addBearerAuth() // Add Authorization header
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(`${globalPrefix}/docs`, app, document);

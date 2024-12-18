@@ -1,14 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
-import { ICompany, Id } from '@game-platform/shared/api';
+import { ICompany, Id, IGame } from '@game-platform/shared/api';
 import { CreateCompanyDto, UpdateCompanyDto } from '@game-platform/backend/dto';
 
 @Injectable()
 export class CompanyService {
   private readonly TAG = 'CompanyService';
 
-  constructor(@InjectModel('Company') private readonly companyModel: Model<ICompany>) {}
+  constructor(
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('Game') private readonly gameModel: Model<IGame>
+  ) {}
 
   // Create a new company
   async create(createCompanyDto: CreateCompanyDto): Promise<string> {
@@ -25,9 +28,9 @@ export class CompanyService {
       return companies.map((company) => this.toICompany(company));
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
-    }
-    throw new BadRequestException('An unexpected error occurred');
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
   }
 
@@ -45,43 +48,68 @@ export class CompanyService {
       return this.toICompany(company);
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
-    }
-    throw new BadRequestException('An unexpected error occurred');
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
   }
 
   // Update a company
   async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<string> {
     try {
-      const updatedCompany = await this.companyModel
-        .findByIdAndUpdate(id, updateCompanyDto, { new: true })
-        .populate('gamesCreated')
-        .exec();
-      if (!updatedCompany) {
+      const company = await this.companyModel.findById(id).exec();
+      if (!company) {
         throw new NotFoundException(`Company with ID ${id} not found`);
       }
+
+      const updatedCompany = await this.companyModel
+        .findByIdAndUpdate(id, updateCompanyDto, { new: true })
+        .exec();
+
+      if (!updatedCompany) {
+        throw new NotFoundException(`Company with ID ${id} not found during update`);
+      }
+
+      // Update references for gamesCreated
+      if (updateCompanyDto.gamesCreated !== undefined) {
+        await this.updateCompanyReferences(
+          id,
+          company.gamesCreated || [],
+          updateCompanyDto.gamesCreated,
+          this.gameModel,
+          'createdBy'
+        );
+      }
+
       return updatedCompany.id as string;
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
-    }
-    throw new BadRequestException('An unexpected error occurred');
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
   }
 
   // Delete a company
   async delete(id: string): Promise<void> {
     try {
-      const result = await this.companyModel.findByIdAndDelete(id).exec();
-      if (!result) {
+      const company = await this.companyModel.findById(id).exec();
+      if (!company) {
         throw new NotFoundException(`Company with ID ${id} not found`);
       }
+
+      // Remove references to this company from related games
+      await this.gameModel.updateMany(
+        { _id: { $in: company.gamesCreated } },
+        { $unset: { createdBy: '' } }
+      );
+
+      await this.companyModel.findByIdAndDelete(id).exec();
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
-    }
-    throw new BadRequestException('An unexpected error occurred');
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
   }
 
@@ -96,13 +124,16 @@ export class CompanyService {
       if (!company.gamesCreated.includes(gameId)) {
         company.gamesCreated.push(gameId);
         await company.save();
+
+        // Update the game's createdBy reference
+        await this.gameModel.findByIdAndUpdate(gameId, { createdBy: companyId });
       }
       return this.toICompany(company);
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
-    }
-    throw new BadRequestException('An unexpected error occurred');
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
   }
 
@@ -116,12 +147,43 @@ export class CompanyService {
 
       company.gamesCreated = company.gamesCreated.filter((id) => id.toString() !== gameId);
       await company.save();
+
+      // Remove the game's createdBy reference
+      await this.gameModel.findByIdAndUpdate(gameId, { $unset: { createdBy: '' } });
+
       return this.toICompany(company);
     } catch (error) {
       if (error instanceof Error) {
-      throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('An unexpected error occurred');
     }
-    throw new BadRequestException('An unexpected error occurred');
+  }
+
+  // Helper method to update company references
+  private async updateCompanyReferences(
+    companyId: Id,
+    currentRefs: Id[],
+    newRefs: Id[],
+    model: Model<any>,
+    fieldName: string
+  ): Promise<void> {
+    // Remove old references
+    const toRemove = currentRefs.filter((id) => !newRefs.includes(id.toString()));
+    if (toRemove.length > 0) {
+      await model.updateMany(
+        { _id: { $in: toRemove } },
+        { $unset: { [fieldName]: '' } }
+      );
+    }
+
+    // Add new references
+    const toAdd = newRefs.filter((id) => !currentRefs.includes(id.toString()));
+    if (toAdd.length > 0) {
+      await model.updateMany(
+        { _id: { $in: toAdd } },
+        { [fieldName]: companyId }
+      );
     }
   }
 

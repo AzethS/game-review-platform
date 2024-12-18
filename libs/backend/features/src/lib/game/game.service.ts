@@ -6,14 +6,18 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
-import { IGame, Id } from '@game-platform/shared/api';
+import { IGame, Id, ICompany, IPlatform } from '@game-platform/shared/api';
 import { CreateGameDto, UpdateGameDto } from '@game-platform/backend/dto';
 
 @Injectable()
 export class GameService {
   private readonly logger = new Logger(GameService.name);
 
-  constructor(@InjectModel('Game') private readonly gameModel: Model<IGame>) {}
+  constructor(
+    @InjectModel('Game') private readonly gameModel: Model<IGame>,
+    @InjectModel('Company') private readonly companyModel: Model<ICompany>,
+    @InjectModel('Platform') private readonly platformModel: Model<IPlatform>
+  ) {}
 
   // Convert Mongoose document to IGame
   private toIGame(game: any): IGame {
@@ -31,6 +35,21 @@ export class GameService {
     try {
       const newGame = new this.gameModel(createGameDto);
       const savedGame = await newGame.save();
+
+      // Update the referenced company's gamesCreated array
+      await this.companyModel.findByIdAndUpdate(
+        createGameDto.createdBy,
+        { $push: { gamesCreated: savedGame._id } },
+        { new: true }
+      );
+
+      // Update the referenced platforms' games array
+      await this.platformModel.updateMany(
+        { _id: { $in: createGameDto.platform } },
+        { $push: { games: savedGame._id } },
+        { new: true }
+      );
+
       return savedGame._id.toHexString();
     } catch (error) {
       if (error instanceof Error) {
@@ -95,12 +114,44 @@ export class GameService {
    */
   async update(id: string, updateGameDto: UpdateGameDto): Promise<string> {
     try {
+      const game = await this.gameModel.findById(id).exec();
+      if (!game) {
+        throw new NotFoundException(`Game with ID ${id} not found.`);
+      }
+
       const updatedGame = await this.gameModel
         .findByIdAndUpdate(id, updateGameDto, { new: true })
         .exec();
 
       if (!updatedGame) {
-        throw new NotFoundException(`Game with ID ${id} not found.`);
+        throw new NotFoundException(`Failed to update game with ID ${id}.`);
+      }
+
+      // Update company gamesCreated array if createdBy is changed
+      if (
+        updateGameDto.createdBy &&
+        updateGameDto.createdBy !== game.createdBy.toString()
+      ) {
+        await this.companyModel.findByIdAndUpdate(
+          game.createdBy,
+          { $pull: { gamesCreated: id } } // Remove from old company
+        );
+        await this.companyModel.findByIdAndUpdate(
+          updateGameDto.createdBy,
+          { $push: { gamesCreated: id } } // Add to new company
+        );
+      }
+
+      // Update platforms if platform is changed
+      if (updateGameDto.platform) {
+        await this.platformModel.updateMany(
+          { _id: { $in: game.platform } },
+          { $pull: { games: id } } // Remove from old platforms
+        );
+        await this.platformModel.updateMany(
+          { _id: { $in: updateGameDto.platform } },
+          { $push: { games: id } } // Add to new platforms
+        );
       }
 
       return updatedGame._id.toHexString();
@@ -117,11 +168,21 @@ export class GameService {
    */
   async delete(id: string): Promise<void> {
     try {
-      const deletedGame = await this.gameModel.findByIdAndDelete(id).exec();
-
-      if (!deletedGame) {
+      const game = await this.gameModel.findById(id).exec();
+      if (!game) {
         throw new NotFoundException(`Game with ID ${id} not found.`);
       }
+
+      // Remove the game reference from related company and platforms
+      await this.companyModel.findByIdAndUpdate(game.createdBy, {
+        $pull: { gamesCreated: id },
+      });
+      await this.platformModel.updateMany(
+        { _id: { $in: game.platform } },
+        { $pull: { games: id } }
+      );
+
+      await this.gameModel.findByIdAndDelete(id).exec();
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -133,44 +194,28 @@ export class GameService {
   /**
    * Add a platform to a game
    */
-  async addPlatform(gameId: Id, platformId: Id): Promise<IGame> {
-    try {
-      const game = await this.gameModel.findById(gameId).exec();
-      if (!game) {
-        throw new NotFoundException(`Game with ID ${gameId} not found.`);
-      }
-
-      if (!game.platform.includes(platformId)) {
-        game.platform.push(platformId);
-      }
-      await game.save();
-      return this.toIGame(game);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to add platform to game.');
+  async addPlatform(gameId: string, platformId: string): Promise<IGame> {
+    const game = await this.gameModel.findById(gameId).exec();
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found.`);
     }
+    if (!game.platform.includes(platformId)) {
+      game.platform.push(platformId);
+      await game.save();
+    }
+    return this.toIGame(game);
   }
 
   /**
    * Remove a platform from a game
    */
-  async removePlatform(gameId: Id, platformId: Id): Promise<IGame> {
-    try {
-      const game = await this.gameModel.findById(gameId).exec();
-      if (!game) {
-        throw new NotFoundException(`Game with ID ${gameId} not found.`);
-      }
-
-      game.platform = game.platform.filter((id) => id.toString() !== platformId);
-      await game.save();
-      return this.toIGame(game);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to remove platform from game.');
+  async removePlatform(gameId: string, platformId: string): Promise<IGame> {
+    const game = await this.gameModel.findById(gameId).exec();
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found.`);
     }
+    game.platform = game.platform.filter((id) => id.toString() !== platformId);
+    await game.save();
+    return this.toIGame(game);
   }
 }
