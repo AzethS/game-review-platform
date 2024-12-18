@@ -1,14 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcomeComponent } from './nx-welcome.component';
-import { GameListComponent } from '@fairys-nx-workshop/features';
-
 
 @Component({
-  imports: [NxWelcomeComponent, RouterModule, GameListComponent],
+  standalone: true,
+  imports: [RouterModule],
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css',
+  styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
   title = 'game-review-recommendation-platform';
