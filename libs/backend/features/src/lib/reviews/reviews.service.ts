@@ -16,7 +16,7 @@ export class ReviewService {
   constructor(
     @InjectModel('Review') private readonly reviewModel: Model<IReview>,
     @InjectModel('User') private readonly userModel: Model<IUser>,
-    @InjectModel('Game') private readonly gameModel: Model<IGame>,
+    @InjectModel('Game') private readonly gameModel: Model<IGame>
   ) {}
 
   /**
@@ -42,14 +42,14 @@ export class ReviewService {
       await this.userModel.findByIdAndUpdate(
         createReviewDto.userId,
         { $push: { reviewsGiven: savedReview._id } },
-        { new: true },
+        { new: true }
       );
 
       // Update game's reviews array
       await this.gameModel.findByIdAndUpdate(
         createReviewDto.gameId,
         { $push: { reviews: savedReview._id } },
-        { new: true },
+        { new: true }
       );
 
       return savedReview._id.toHexString();
@@ -66,7 +66,11 @@ export class ReviewService {
    */
   async getAll(): Promise<IReview[]> {
     try {
-      const reviews = await this.reviewModel.find().populate('userId gameId').exec();
+      const reviews = await this.reviewModel
+        .find()
+        .populate('userId', 'name') // Populate only the name field of the user
+        .populate('gameId', 'title') // Populate only the title field of the game
+      .exec();
       return reviews.map(this.toIReview);
     } catch (error) {
       if (error instanceof Error) {
@@ -85,7 +89,10 @@ export class ReviewService {
         throw new BadRequestException('Invalid ID format.');
       }
 
-      const review = await this.reviewModel.findById(id).populate('userId gameId').exec();
+      const review = await this.reviewModel
+        .findById(id)
+        .populate('userId gameId')
+        .exec();
       if (!review) {
         throw new NotFoundException(`Review with ID ${id} not found.`);
       }
@@ -108,13 +115,18 @@ export class ReviewService {
         throw new BadRequestException('Invalid User ID format.');
       }
 
-      const reviews = await this.reviewModel.find({ userId }).populate('gameId').exec();
+      const reviews = await this.reviewModel
+        .find({ userId })
+        .populate('gameId')
+        .exec();
       return reviews.map(this.toIReview);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
       }
-      throw new BadRequestException(`Failed to retrieve reviews for User ID ${userId}.`);
+      throw new BadRequestException(
+        `Failed to retrieve reviews for User ID ${userId}.`
+      );
     }
   }
 
@@ -127,13 +139,18 @@ export class ReviewService {
         throw new BadRequestException('Invalid Game ID format.');
       }
 
-      const reviews = await this.reviewModel.find({ gameId }).populate('userId').exec();
+      const reviews = await this.reviewModel
+        .find({ gameId })
+        .populate('userId')
+        .exec();
       return reviews.map(this.toIReview);
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
       }
-      throw new BadRequestException(`Failed to retrieve reviews for Game ID ${gameId}.`);
+      throw new BadRequestException(
+        `Failed to retrieve reviews for Game ID ${gameId}.`
+      );
     }
   }
 
@@ -156,7 +173,9 @@ export class ReviewService {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
       }
-      throw new BadRequestException(`Failed to calculate average rating for Game ID ${gameId}.`);
+      throw new BadRequestException(
+        `Failed to calculate average rating for Game ID ${gameId}.`
+      );
     }
   }
 
@@ -179,26 +198,28 @@ export class ReviewService {
       }
 
       // Update user and game references if they are changed
-      if (updateReviewDto.userId && updateReviewDto.userId !== review.userId.toString()) {
-        await this.userModel.findByIdAndUpdate(
-          review.userId,
-          { $pull: { reviewsGiven: id } },
-        );
-        await this.userModel.findByIdAndUpdate(
-          updateReviewDto.userId,
-          { $push: { reviewsGiven: id } },
-        );
+      if (
+        updateReviewDto.userId &&
+        updateReviewDto.userId !== review.userId.toString()
+      ) {
+        await this.userModel.findByIdAndUpdate(review.userId, {
+          $pull: { reviewsGiven: id },
+        });
+        await this.userModel.findByIdAndUpdate(updateReviewDto.userId, {
+          $push: { reviewsGiven: id },
+        });
       }
 
-      if (updateReviewDto.gameId && updateReviewDto.gameId !== review.gameId.toString()) {
-        await this.gameModel.findByIdAndUpdate(
-          review.gameId,
-          { $pull: { reviews: id } },
-        );
-        await this.gameModel.findByIdAndUpdate(
-          updateReviewDto.gameId,
-          { $push: { reviews: id } },
-        );
+      if (
+        updateReviewDto.gameId &&
+        updateReviewDto.gameId !== review.gameId.toString()
+      ) {
+        await this.gameModel.findByIdAndUpdate(review.gameId, {
+          $pull: { reviews: id },
+        });
+        await this.gameModel.findByIdAndUpdate(updateReviewDto.gameId, {
+          $push: { reviews: id },
+        });
       }
 
       return updatedReview._id.toHexString();
@@ -221,14 +242,12 @@ export class ReviewService {
       }
 
       // Remove references from user and game
-      await this.userModel.findByIdAndUpdate(
-        review.userId,
-        { $pull: { reviewsGiven: id } },
-      );
-      await this.gameModel.findByIdAndUpdate(
-        review.gameId,
-        { $pull: { reviews: id } },
-      );
+      await this.userModel.findByIdAndUpdate(review.userId, {
+        $pull: { reviewsGiven: id },
+      });
+      await this.gameModel.findByIdAndUpdate(review.gameId, {
+        $pull: { reviews: id },
+      });
 
       await this.reviewModel.findByIdAndDelete(id).exec();
     } catch (error) {

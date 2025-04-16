@@ -1,25 +1,51 @@
-// libs/features/dashboard/src/lib/dashboard/dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { ReviewService } from '../review/review.service';
+import { UserService } from '../user/user.service';
+import { GameService } from '../game/game.service';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
+  imports: [CommonModule, RouterModule],
   selector: 'lib-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit {
-  user: any = null;
+  reviewsCount = 0;
+  usersCount = 0;
+  gamesCount = 0;
+  loading = true;
+  errorMessage: string | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private reviewService: ReviewService,
+    private userService: UserService,
+    private gameService: GameService
+  ) {}
 
   ngOnInit(): void {
-    this.http.get('/api/user/profile').subscribe(
-      (data) => {
-        this.user = data;
-      },
-      (error) => {
-        console.error('Failed to load user data', error);
-      }
-    );
+    this.loadDashboardData();
+  }
+
+  private loadDashboardData(): void {
+    this.loading = true;
+
+    Promise.all([
+      this.reviewService.list().toPromise(),
+      this.userService.list().toPromise(),
+      this.gameService.list().toPromise(),
+    ])
+      .then(([reviews, users, games]) => {
+        this.reviewsCount = reviews?.length || 0;
+        this.usersCount = users?.length || 0;
+        this.gamesCount = games?.length || 0;
+        this.loading = false;
+      })
+      .catch((error) => {
+        console.error('Error loading dashboard data:', error);
+        this.errorMessage = 'Failed to load dashboard data';
+        this.loading = false;
+      });
   }
 }

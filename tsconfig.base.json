@@ -27,7 +27,8 @@
       "@game-platform/shared/api": ["libs/shared/api/src/index.ts"],
       "@game-review-platform/shared/util-env": [
         "libs/shared/util-env/src/index.ts"
-      ]
+      ],
+      "@gamereview/backend/neo4j": ["libs/backend/neo4j/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

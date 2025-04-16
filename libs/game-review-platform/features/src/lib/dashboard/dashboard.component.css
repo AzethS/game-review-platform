@@ -1,6 +1,34 @@
-.dashboard-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  
+/* dashboard.component.css */
+
+.container {
+  max-width: 1200px;
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.text-blue-600 {
+  color: #2563eb;
+}
+
+.text-green-600 {
+  color: #16a34a;
+}
+
+.text-indigo-600 {
+  color: #4f46e5;
+}
+
+.text-red-500 {
+  color: #ef4444;
+}

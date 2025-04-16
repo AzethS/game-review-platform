@@ -1,0 +1,93 @@
+<div class="container mx-auto p-4">
+    <div *ngIf="loading" class="text-center text-blue-500">Loading game...</div>
+    <form [formGroup]="gameForm" (ngSubmit)="onSubmit()" class="space-y-4">
+      <!-- Title Field -->
+      <div>
+        <label for="title" class="block font-medium">Game Title</label>
+        <input
+          id="title"
+          type="text"
+          formControlName="title"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+  
+      <!-- Description Field -->
+      <div>
+        <label for="description" class="block font-medium">Description</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        ></textarea>
+      </div>
+  
+      <!-- Genre Field -->
+      <div>
+        <label for="genre" class="block font-medium">Genre</label>
+        <input
+          id="genre"
+          type="text"
+          formControlName="genre"
+          placeholder="Comma-separated genres"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+  
+      <!-- Platform Field -->
+      <div>
+        <label for="platform" class="block font-medium">Platform IDs</label>
+        <input
+          id="platform"
+          type="text"
+          formControlName="platform"
+          placeholder="Comma-separated platform IDs"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+  
+      <!-- Release Date Field -->
+      <div>
+        <label for="releaseDate" class="block font-medium">Release Date</label>
+        <input
+          id="releaseDate"
+          type="date"
+          formControlName="releaseDate"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+  
+      <!-- Created By Field -->
+      <div>
+        <label for="createdBy" class="block font-medium">Created By (Company ID)</label>
+        <input
+          id="createdBy"
+          type="text"
+          formControlName="createdBy"
+          required
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+      </div>
+  
+      <!-- Messages -->
+      <div *ngIf="errorMessage" class="text-red-500">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="text-green-500">{{ successMessage }}</div>
+  
+      <!-- Submit Button -->
+      <div class="flex justify-end">
+        <button
+          type="submit"
+          [disabled]="gameForm.invalid || loading"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Update Game
+        </button>
+      </div>
+    </form>
+  </div>
+  

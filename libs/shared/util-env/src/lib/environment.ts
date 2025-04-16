@@ -1,11 +1,9 @@
 import { IEnvironment } from './environment.interface';
 
 export const environment: IEnvironment = {
-    production: false,
-
-    ROOT_DOMAIN_URL: 'dummy',
-    dataApiUrl: 'dummy',
-    jwtSecret: 'password',
-
-    MONGO_DB_CONNECTION_STRING: 'dummy'
+  production: false,
+  ROOT_DOMAIN_URL: 'http://localhost:3000',
+  dataApiUrl: 'http://localhost:3000/api',
+  jwtSecret: 'password',
+  MONGO_DB_CONNECTION_STRING: 'mongodb://localhost:27017/game-review-platform',
 };

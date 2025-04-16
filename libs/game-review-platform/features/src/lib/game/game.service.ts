@@ -2,74 +2,130 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
-import { ApiResponse, IGame } from '@game-platform/shared/api';
+import { IGame, ApiResponse } from '@game-platform/shared/api';
 import { environment } from '@game-review-platform/shared/util-env';
 
-/**
- * HTTP options for requests
- */
-export const httpOptions = {
-  observe: 'body' as const,
-  responseType: 'json' as const,
-};
-
-/**
- * Service to manage games and communicate with the backend
- */
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class GameService {
-  endpoint = `${environment.dataApiUrl}/games`; // Base URL for the game API
+  private readonly apiUrl = environment.dataApiUrl;
+  private readonly endpoint = '/games';
 
   constructor(private readonly http: HttpClient) {}
 
   /**
    * Get all games.
-   *
-   * @param options - Optional query parameters
    */
-  public list(options?: any): Observable<IGame[] | null> {
-    console.log(`Fetching games from ${this.endpoint}`);
-
+  public list(): Observable<IGame[]> {
     return this.http
-      .get<ApiResponse<IGame[]>>(this.endpoint, {
-        ...options,
-        ...httpOptions,
-      })
+      .get<ApiResponse<IGame[]>>(`${this.apiUrl}${this.endpoint}`)
       .pipe(
-        map((response: any) => response.results as IGame[]),
-        tap(console.log),
+        map((response) => {
+          if (!response || !response.results) {
+            console.error('Invalid response format', response);
+            return [];
+          }
+          return response.results as IGame[];
+        }),
+        tap(() => console.log('Fetched all games')),
         catchError(this.handleError)
       );
   }
 
   /**
    * Get a single game by ID.
-   *
-   * @param id - The ID of the game
-   * @param options - Optional query parameters
    */
-  public read(id: string | null, options?: any): Observable<IGame> {
-    console.log(`Fetching game with ID: ${id} from ${this.endpoint}/${id}`);
+  public read(gameId: string): Observable<IGame> {
     return this.http
-      .get<ApiResponse<IGame>>(`${this.endpoint}/${id}`, {
-        ...options,
-        ...httpOptions,
-      })
+      .get<ApiResponse<IGame>>(`${this.apiUrl}${this.endpoint}/${gameId}`)
       .pipe(
-        tap(console.log),
-        map((response: any) => response.results as IGame),
+        map((response) => {
+          if (!response || !response.results) {
+            console.error(`Invalid response format for game ID: ${gameId}`, response);
+            throw new Error('Game not found');
+          }
+          return response.results as IGame;
+        }),
+        tap(() => console.log(`Fetched game with ID: ${gameId}`)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Handle HTTP errors.
-   *
-   * @param error - The HTTP error response
-   * @returns An Observable that emits an error
+   * Get games by platform ID.
    */
-  public handleError(error: HttpErrorResponse): Observable<any> {
-    console.error('Error occurred in GameService:', error);
+  public getByPlatform(platformId: string): Observable<IGame[]> {
+    return this.http
+      .get<ApiResponse<IGame[]>>(`${this.apiUrl}${this.endpoint}/platform/${platformId}`)
+      .pipe(
+        map((response) => {
+          if (!response || !response.results) {
+            console.error(`Invalid response format for platform ID: ${platformId}`, response);
+            return [];
+          }
+          return response.results as IGame[];
+        }),
+        tap(() => console.log(`Fetched games for platform ID: ${platformId}`)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Create a new game.
+   */
+  public create(gameData: Partial<IGame>): Observable<IGame> {
+    return this.http
+      .post<ApiResponse<IGame>>(`${this.apiUrl}${this.endpoint}`, gameData)
+      .pipe(
+        map((response) => {
+          if (!response || !response.results) {
+            console.error('Invalid response format during game creation', response);
+            throw new Error('Failed to create game');
+          }
+          return response.results as IGame;
+        }),
+        tap(() => console.log('Created a new game')),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Update a game by ID.
+   */
+  public update(gameId: string, gameData: Partial<IGame>): Observable<IGame> {
+    return this.http
+      .put<ApiResponse<IGame>>(`${this.apiUrl}${this.endpoint}/${gameId}`, gameData)
+      .pipe(
+        map((response) => {
+          if (!response || !response.results) {
+            console.error(`Invalid response format during update for game ID: ${gameId}`, response);
+            throw new Error('Failed to update game');
+          }
+          return response.results as IGame;
+        }),
+        tap(() => console.log(`Updated game with ID: ${gameId}`)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Delete a game by ID.
+   */
+  public delete(gameId: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}${this.endpoint}/${gameId}`)
+      .pipe(
+        tap(() => console.log(`Deleted game with ID: ${gameId}`)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Handle errors from the API.
+   */
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    console.error('GameService Error:', error);
     return throwError(() => new Error(error.message));
   }
 }

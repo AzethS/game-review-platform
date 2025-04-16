@@ -1,7 +1,34 @@
-<div *ngFor="let game of games">
-    <h2>{{ game.title }}</h2>
-    <p>Description: {{ game.description }}</p>
-    <p>Platform: {{ game.platform }}</p>
-    <p>Release Date: {{ game.releaseDate | date: 'long' }}</p>
+<div class="container mx-auto p-6">
+  <!-- Loading and Messages -->
+  <div *ngIf="loading" class="text-center text-blue-500 text-lg">Loading games...</div>
+  <div *ngIf="successMessage" class="text-green-500 text-lg">{{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="text-red-500 text-lg">{{ errorMessage }}</div>
+
+  <!-- No Games Found -->
+  <div *ngIf="games.length === 0 && !loading" class="text-center text-gray-500 text-lg">
+    <p>No games found.</p>
   </div>
-  
+
+  <!-- Games Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="games.length > 0">
+    <div *ngFor="let game of games" class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
+      <!-- Game Title -->
+      <h3 class="font-bold text-xl text-gray-800 mb-2">{{ game.title }}</h3>
+      <p class="text-gray-600"><b>Description:</b> {{ game.description }}</p>
+      <p class="text-gray-600"><b>Genre:</b> {{ game.genre.join(', ') }}</p>
+      <p class="text-gray-600"><b>Release Date:</b> {{ game.releaseDate | date: 'mediumDate' }}</p>
+      <p class="text-gray-600"><b>Platform IDs:</b> {{ game.platform.join(', ') }}</p>
+      <p class="text-gray-600"><b>Created By:</b> {{ game.createdBy }}</p>
+
+      <!-- Actions -->
+      <div class="flex justify-end mt-4 space-x-4">
+        <button
+          class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          (click)="deleteGame(game.id)"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

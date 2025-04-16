@@ -1,97 +1,131 @@
-<nav class="bg-white border-gray-200 dark:bg-gray-900">
-  <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-    <!-- Logo and Title -->
-    <a routerLink="/" class="flex items-center space-x-3 rtl:space-x-reverse">
-      <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-        Game Review Platform
-      </span>
+<nav class="bg-white shadow dark:bg-gray-800">
+  <div class="container mx-auto flex justify-between items-center p-4">
+    <!-- Brand Logo -->
+    <a routerLink="/" class="text-2xl font-bold text-gray-800 dark:text-white">
+      Game Review Platform
     </a>
 
-    <!-- User Dropdown and Mobile Menu Button -->
-    <div *ngIf="isAuth()" class="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-      <button type="button" class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false" data-dropdown-toggle="user-dropdown">
-        <span class="sr-only">Open user menu</span>
-        <img class="w-8 h-8 rounded-full" [src]="profilePicture" alt="user photo">
+    <!-- Navigation Links -->
+    <div class="hidden md:flex items-center space-x-6">
+      <a
+        routerLink="/dashboard"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        Dashboard
+      </a>
+      <a
+        routerLink="/reviews"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        Reviews
+      </a>
+      <a
+        routerLink="/users"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+        *ngIf="currentUser?.role === 'Admin'"
+      >
+        Users
+      </a>
+      <a
+        routerLink="/about"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        About
+      </a>
+    </div>
+
+    <!-- User Actions -->
+    <div class="flex items-center space-x-4">
+      <!-- Theme Toggle Button -->
+      <button
+        class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"
+        (click)="toggleDarkMode()"
+      >
+        Toggle Theme
       </button>
-      
-      <!-- User Dropdown Menu -->
-      <div class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 dark:divide-gray-600" id="user-dropdown">
-        <div *ngIf="currentUser" class="px-4 py-3">
-          <span class="block text-sm text-gray-900 dark:text-white">{{ currentUser.name }}</span>
-          <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{ currentUser.email }}</span>
-        </div>
-        <ul class="py-2" aria-labelledby="user-menu-button">
-          <li>
-            <a routerLink="/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
-              Dashboard
-            </a>
-          </li>
-          <li *ngIf="currentUser.role === 'Admin'">
-            <a routerLink="/admin/games" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
-              Manage Games
-            </a>
-          </li>
-          <li>
-            <a (click)="toggleDarkMode()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
-              {{ themeService.isDarkMode() ? 'Light Mode' : 'Dark Mode' }}
-            </a>
-          </li>
-          <li>
-            <a (click)="logout()" routerLink="/login" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
-              Sign out
-            </a>
-          </li>
-        </ul>
+
+      <!-- User Info -->
+      <div *ngIf="isAuth()" class="flex items-center space-x-4">
+        <img
+          [src]="profilePicture"
+          alt="Profile"
+          class="w-8 h-8 rounded-full border border-gray-300"
+        />
+        <p class="text-gray-800 dark:text-gray-200 font-medium">
+          {{ currentUser?.name }}
+        </p>
+        <button
+          class="text-red-500 hover:text-red-700 transition"
+          (click)="logout()"
+        >
+          Logout
+        </button>
       </div>
 
-      <!-- Mobile Menu Button -->
-      <button data-collapse-toggle="navbar-user" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
-        <span class="sr-only">Open main menu</span>
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M1 1h15M1 7h15M1 13h15"/>
-        </svg>
-      </button>
+      <!-- Login Link -->
+      <div *ngIf="!isAuth()">
+        <a
+          routerLink="/login"
+          class="text-blue-500 hover:text-blue-700 font-semibold transition"
+        >
+          Login
+        </a>
+      </div>
     </div>
 
-    <!-- Authenticated User Links -->
-    <div *ngIf="isAuth()" class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-user">
-      <ul class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-        <li>
-          <a routerLink="/" class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500">
-            Home
-          </a>
-        </li>
-        <li>
-          <a routerLink="/about" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500">
-            About
-          </a>
-        </li>
-        <li>
-          <a routerLink="/reviews" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500">
-            Reviews
-          </a>
-        </li>
-        <li>
-          <a routerLink="/platforms" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500">
-            Platforms
-          </a>
-        </li>
-        <li>
-          <a routerLink="/games" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500">
-            Games
-          </a>
-        </li>
-      </ul>
-    </div>
+    <!-- Mobile Menu Toggle -->
+    <button
+      class="md:hidden text-gray-800 dark:text-white focus:outline-none"
+      (click)="toggleMenu()"
+    >
+      ☰
+    </button>
+  </div>
 
-    <!-- Non-Authenticated User Links -->
-    <div *ngIf="!isAuth()" class="flex items-center md:order-2 space-x-3 rtl:space-x-reverse">
-      <a routerLink="/login" class="block py-2 px-4 text-gray-900 bg-gray-200 rounded hover:bg-gray-300 dark:text-white dark:bg-gray-700 dark:hover:bg-gray-600">
-        Login
+  <!-- Mobile Menu -->
+  <div *ngIf="isMenuOpen" class="md:hidden bg-gray-100 dark:bg-gray-700">
+    <div class="flex flex-col items-start p-4 space-y-2">
+      <a
+        routerLink="/dashboard"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        Dashboard
       </a>
-      <a routerLink="/register" class="block py-2 px-4 text-white bg-blue-700 rounded hover:bg-blue-800">
-        Register
+      <a
+        routerLink="/reviews"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        Reviews
       </a>
+      <a
+        routerLink="/users"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+        *ngIf="currentUser?.role === 'Admin'"
+      >
+        Users
+      </a>
+      <a
+        routerLink="/about"
+        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+      >
+        About
+      </a>
+      <div *ngIf="isAuth()">
+        <button
+          class="text-red-500 hover:text-red-700 transition w-full text-left"
+          (click)="logout()"
+        >
+          Logout
+        </button>
+      </div>
+      <div *ngIf="!isAuth()">
+        <a
+          routerLink="/login"
+          class="text-blue-500 hover:text-blue-700 font-semibold transition"
+        >
+          Login
+        </a>
+      </div>
     </div>
   </div>
 </nav>

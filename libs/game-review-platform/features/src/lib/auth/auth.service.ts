@@ -19,7 +19,7 @@ export class AuthService {
 
     apiUrl = environment.dataApiUrl;
     // 'http://localhost:3000';
-    endpoint = '/api/auth/validate';
+    endpoint = '/auth/validate';
     redirectUrl: string | null = null;
 
     constructor(private readonly http: HttpClient, private cookieService: CookieService,

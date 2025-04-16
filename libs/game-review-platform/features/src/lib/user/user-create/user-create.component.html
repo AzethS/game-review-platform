@@ -1,89 +1,83 @@
 <div class="container mx-auto p-4">
-    <div class="flex flex-col md:flex-row gap-4 justify-center">
-      <athlete-xperience-card class="w-full md:w-3/4 lg:w-3/4 xl:w-3/4 2xl:w-3/4 mx-auto shadow-lg p-6 rounded-lg">
-        <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="space-y-4 w-full">
-           
-          <!-- Success and Error Messages -->
-          <div *ngIf="successMessage" class="text-green-500">{{ successMessage }}</div>
-          <div *ngIf="errorMessage" class="text-red-500">{{ errorMessage }}</div>
-  
-          <!-- Name Field -->
-          <div>
-            <label class="block font-medium mb-1">Name</label>
-            <input type="text" formControlName="name" class="w-full p-2 border border-gray-300 rounded" [class.border-red-500]="f.name.invalid && f.name.touched">
-            <div *ngIf="f.name.invalid && f.name.touched" class="text-red-500">Name is required</div>
+  <div class="flex flex-col md:flex-row gap-4 justify-center">
+    <div class="w-full md:w-3/4 lg:w-3/4 xl:w-3/4 2xl:w-3/4 mx-auto shadow-lg p-6 rounded-lg bg-white">
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="space-y-4 w-full">
+        <!-- Success and Error Messages -->
+        <div *ngIf="successMessage" class="text-green-500">{{ successMessage }}</div>
+        <div *ngIf="errorMessage" class="text-red-500">{{ errorMessage }}</div>
+
+        <!-- Name Field -->
+        <div>
+          <label for="name" class="block font-medium mb-1">Name</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            class="w-full p-2 border border-gray-300 rounded"
+          />
+          <div *ngIf="f['name'].invalid && f['name'].touched" class="text-red-500">Name is required</div>
+        </div>
+
+        <!-- Email Address Field -->
+        <div>
+          <label for="emailAddress" class="block font-medium mb-1">Email Address</label>
+          <input
+            id="emailAddress"
+            type="email"
+            formControlName="emailAddress"
+            class="w-full p-2 border border-gray-300 rounded"
+          />
+          <div *ngIf="f['emailAddress'].invalid && f['emailAddress'].touched" class="text-red-500">
+            Email is required
           </div>
-  
-          <!-- Email Address Field -->
-          <div>
-            <label class="block font-medium mb-1">Email Address</label>
-            <input type="email" formControlName="emailAddress" class="w-full p-2 border border-gray-300 rounded" [class.border-red-500]="f.emailAddress.invalid && f.emailAddress.touched">
-            <div *ngIf="f.emailAddress.invalid && f.emailAddress.touched" class="text-red-500">Email address is required</div>
+        </div>
+
+        <!-- Birth Date Field -->
+        <div>
+          <label for="birthDate" class="block font-medium mb-1">Birth Date</label>
+          <input
+            id="birthDate"
+            type="date"
+            formControlName="birthDate"
+            class="w-full p-2 border border-gray-300 rounded"
+          />
+          <div *ngIf="f['birthDate'].invalid && f['birthDate'].touched" class="text-red-500">
+            Birth date is required
           </div>
-  
-          <!-- Birth Date Field -->
-          <div>
-            <label class="block font-medium mb-1">Birth Date</label>
-            <input type="date" formControlName="birthDate" class="w-full p-2 border border-gray-300 rounded" [class.border-red-500]="f.birthDate.invalid && f.birthDate.touched">
-            <div *ngIf="f.birthDate.invalid && f.birthDate.touched" class="text-red-500">Birth date is required</div>
+        </div>
+
+        <!-- Address Field -->
+        <div>
+          <label for="address" class="block font-medium mb-1">Address</label>
+          <div formGroupName="address" class="space-y-2">
+            <input type="text" formControlName="street" placeholder="Street" class="w-full p-2 border border-gray-300 rounded" />
+            <input type="text" formControlName="city" placeholder="City" class="w-full p-2 border border-gray-300 rounded" />
+            <input type="text" formControlName="state" placeholder="State" class="w-full p-2 border border-gray-300 rounded" />
+            <input type="text" formControlName="zipCode" placeholder="Zip Code" class="w-full p-2 border border-gray-300 rounded" />
+            <input type="text" formControlName="country" placeholder="Country" class="w-full p-2 border border-gray-300 rounded" />
           </div>
-  
-          <!-- Address Fields -->
-          <div>
-            <label class="block font-medium mb-1">Address</label>
-            <div class="space-y-2" formGroupName="address">
-              <input type="text" formControlName="street" placeholder="Street" class="w-full p-2 border border-gray-300 rounded">
-              <input type="text" formControlName="city" placeholder="City" class="w-full p-2 border border-gray-300 rounded">
-              <input type="text" formControlName="state" placeholder="State" class="w-full p-2 border border-gray-300 rounded">
-              <input type="text" formControlName="zipCode" placeholder="Zip Code" class="w-full p-2 border border-gray-300 rounded">
-              <input type="text" formControlName="country" placeholder="Country" class="w-full p-2 border border-gray-300 rounded">
-            </div>
-          </div>
-  
-          <!-- Role Field -->
-          <div>
-            <label class="block font-medium mb-1">Role</label>
-            <select formControlName="role" class="w-full p-2 border border-gray-300 rounded">
-              <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
-            </select>
-          </div>
-  
-          <!-- Preferred Sports Field -->
-          <div>
-            <label class="block font-medium mb-1">Preferred Sports</label>
-            <input type="text" formControlName="preferredSports" class="w-full p-2 border border-gray-300 rounded">
-          </div>
-  
-          <!-- Qualifications Field -->
-          <div>
-            <label class="block font-medium mb-1">Qualifications</label>
-            <input type="text" formControlName="qualifications" class="w-full p-2 border border-gray-300 rounded">
-          </div>
-  
-          <!-- Specializations Field -->
-          <div>
-            <label class="block font-medium mb-1">Specializations</label>
-            <input type="text" formControlName="specializations" class="w-full p-2 border border-gray-300 rounded">
-          </div>
-  
-            <!-- Submit Button -->
-            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded me-2">
-                Create User
-            </button>
-            
-            <!-- Clear All Button -->
-            <button type="button" (click)="resetForm()" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded me-2">
-                Clear All
-            </button>
-            
-            <!-- Back Button -->
-            <button type="button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                <a routerLink="/Users">
-                    Back
-                </a>
-            </button>
-  
-        </form>
-      </athlete-xperience-card>
+        </div>
+
+        <!-- Role Field -->
+        <div>
+          <label for="role" class="block font-medium mb-1">Role</label>
+          <select id="role" formControlName="role" class="w-full p-2 border border-gray-300 rounded">
+            <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+          </select>
+          <div *ngIf="f['role'].invalid && f['role'].touched" class="text-red-500">Role is required</div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            [disabled]="userForm.invalid"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Create User
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>

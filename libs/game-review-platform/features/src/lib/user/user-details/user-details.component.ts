@@ -3,9 +3,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../user.service';
 import { IUser } from '@game-platform/shared/api';
 import { AuthService } from '../../auth/auth.service';
-
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
+  imports: [CommonModule, RouterModule],
   selector: 'lib-game-review-user-details',
   templateUrl: './user-details.component.html',
   styles: [],

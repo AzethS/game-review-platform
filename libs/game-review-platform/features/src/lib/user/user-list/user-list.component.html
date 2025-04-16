@@ -1,37 +1,51 @@
-<div class="m-5 text-right ">
-    <a routerLink="/User/Create" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer">
-      Create user
-    </a>
-  </div>
-  <div class="container mx-auto px-4 flex">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-auto">
+<div class="m-5 text-right">
+  <a
+    routerLink="/users/create"
+    class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    role="button"
+  >
+    Create User
+  </a>
+</div>
+
+<div class="container mx-auto px-4 flex">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-auto">
     <div
       *ngFor="let user of users"
+      tabindex="0"
+      class="bg-white shadow-lg rounded-lg p-4 m-2 cursor-pointer focus:ring-2 focus:ring-blue-500 outline-none"
       (click)="goToUserDetail(user.id)"
-      >
-      <!-- class="bg-white shadow-lg rounded-lg p-4 m-2" -->
-      <athlete-xperience-card>
-        <!-- <img class="object-cover w-full rounded-t-lg h-96 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg" src="/docs/images/blog/image-4.jpg" alt=""> -->
-        <!-- <img src="https://picsum.photos/400/300?random={{user.id}}" alt="Random Image" class="w-full h-auto"> -->
-        <img src="https://randomuser.me/api/portraits/men/{{getRandomNumber()}}.jpg" alt="Random User Image" class="w-full h-auto" onerror="this.onerror=null;this.src='fallback-image-url';">
-        <!-- <img [src]="user.image" alt="user Image" class="w-full h-auto"> -->
-  
+      (keydown.enter)="goToUserDetail(user.id)"
+      (keydown.space)="goToUserDetail(user.id)"
+      role="button"
+      aria-label="View User Details"
+    >
+      <!-- User Profile Image -->
+      <div>
+        <img
+          src="https://randomuser.me/api/portraits/men/{{ getRandomNumber() }}.jpg"
+          alt="User Profile Image"
+          class="w-full h-auto rounded-full"
+          onerror="this.onerror=null;this.src='fallback-image-url';"
+        />
+      </div>
+      <!-- User Details -->
+      <div class="mt-4">
         <h2 class="font-bold text-lg">{{ user.name }}</h2>
-        <p>Email Address: {{ user.emailAddress }}</p>
-        <p>Birthday: {{ user.birthDate | date : 'mediumDate' }}</p>
-        <p>Duur: {{ user.role }}</p>
-        <!-- <div *ngIf="user.address">
-            <p><b>
-                Address:
-            </b></p>
-            <p>Street: {{ user.address.street }}</p>
-            <p>ZipCode: {{ user.address.zipCode }}</p>
-            <p>City: {{ user.address.city }}</p>
-            <p>State: {{ user.address.state }}</p>
-            <p>Country: {{ user.address.country }}</p>
-        </div>         -->
-      </athlete-xperience-card>
-    </div>
+        <p><b>Email:</b> {{ user.emailAddress }}</p>
+        <p><b>Birthday:</b> {{ user.birthDate | date: 'mediumDate' }}</p>
+        <p><b>Role:</b> {{ user.role }}</p>
+        <div *ngIf="user.address">
+          <p><b>Address:</b></p>
+          <ul class="ml-4">
+            <li><b>Street:</b> {{ user.address.street }}</li>
+            <li><b>ZipCode:</b> {{ user.address.zipCode }}</li>
+            <li><b>City:</b> {{ user.address.city }}</li>
+            <li><b>State:</b> {{ user.address.state }}</li>
+            <li><b>Country:</b> {{ user.address.country }}</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
-  
+</div>

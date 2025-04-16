@@ -1,63 +1,72 @@
 <div class="container mx-auto px-4 flex">
-    <div class="flex gap-4 mx-auto">
-      <div *ngIf="user" class="container mx-auto mt-5 p-4">
-        <athlete-xperience-card>
-          <img src="https://picsum.photos/400/300?random={{user.id}}" alt="Random Image" class="w-full h-auto" onerror="this.onerror=null;this.src='fallback-image-url';">
-    
-          <h2 class="font-bold text-lg">{{ user.name }}</h2>
-          <p>Email: {{ user.emailAddress }}</p>
-          <p>Role: {{ user.role }}</p>
-          <p>Birthday: {{ user.birthDate | date : 'mediumDate' }}</p>
-          <div *ngIf="user.address">
-              <p class="font-medium">Address:</p>
-              <div class="ms-3">
-                  <p >Street: {{ user.address.street }}</p>
-                  <p>ZipCode: {{ user.address.zipCode }}</p>
-                  <p>City: {{ user.address.city }}</p>
-                  <p>State: {{ user.address.state }}</p>
-                  <p>Country: {{ user.address.country }}</p>
-               </div>
-           </div>
-          <div *ngIf="user.preferredSports.length">
-            <p class="font-medium">Preferred Sports:</p>
-            <ul>
-              <li *ngFor="let sport of user.preferredSports" class="ms-3">{{ sport }}</li>
-            </ul>
+  <div class="flex gap-4 mx-auto">
+    <div *ngIf="user" class="container mx-auto mt-5 p-4">
+      <div class="shadow-lg p-6 rounded-lg bg-white">
+        <!-- User Profile Picture -->
+        <img
+          src="https://picsum.photos/400/300?random={{user.id}}"
+          alt="User Profile"
+          class="w-full h-auto rounded"
+          onerror="this.onerror=null;this.src='fallback-image-url';"
+        />
+
+        <!-- User Information -->
+        <h2 class="font-bold text-xl mt-4">{{ user.name }}</h2>
+        <p><strong>Email:</strong> {{ user.emailAddress }}</p>
+        <p><strong>Role:</strong> {{ user.role }}</p>
+        <p><strong>Birthday:</strong> {{ user.birthDate | date: 'mediumDate' }}</p>
+
+        <!-- Address Information -->
+        <div *ngIf="user.address" class="mt-4">
+          <p class="font-medium">Address:</p>
+          <div class="ml-3">
+            <p><strong>Street:</strong> {{ user.address.street }}</p>
+            <p><strong>ZipCode:</strong> {{ user.address.zipCode }}</p>
+            <p><strong>City:</strong> {{ user.address.city }}</p>
+            <p><strong>State:</strong> {{ user.address.state }}</p>
+            <p><strong>Country:</strong> {{ user.address.country }}</p>
           </div>
-          <div *ngIf="user.qualifications.length">
-            <p class="font-medium">Qualifications:</p>
-            <ul>
-              <li *ngFor="let qualification of user.qualifications" class="ms-3">{{ qualification }}</li>
-            </ul>
+        </div>
+
+        <!-- Reviews Given -->
+        <div *ngIf="user.reviewsGiven?.length" class="mt-4">
+          <p class="font-medium">Reviews Given:</p>
+          <ul class="list-disc ml-5">
+            <li *ngFor="let review of user.reviewsGiven">{{ review }}</li>
+          </ul>
+        </div>
+
+        <!-- Owned Games -->
+        <div *ngIf="user.ownedGames?.length" class="mt-4">
+          <p class="font-medium">Owned Games:</p>
+          <ul class="list-disc ml-5">
+            <li *ngFor="let game of user.ownedGames">{{ game }}</li>
+          </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between mt-6">
+          <!-- Admin Actions -->
+          <div *ngIf="currentUser.role === 'Admin'" class="flex space-x-4">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              <a [routerLink]="['/Users/Edit', user.id]">Edit User</a>
+            </button>
+            <button
+              (click)="deleteUser(user.id)"
+              class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete User
+            </button>
           </div>
-          <div *ngIf="user.specializations.length">
-            <p class="font-medium">Specializations:</p>
-            <ul>
-              <li *ngFor="let specialization of user.specializations" class="ms-3">{{ specialization }}</li>
-            </ul>
+
+          <!-- Back Button -->
+          <div>
+            <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+              <a routerLink="/Users">Back</a>
+            </button>
           </div>
-  
-          <div class="flex space-x-2 my-3">
-            <div *ngIf="currentUser.role === 'Admin'" class="flex space-x-2 my-3">
-              <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                  <a routerLink="/Users/Edit/{{user.id}}">
-                      Edit User
-                  </a>
-              </button>
-              <button (click)="deleteUser(user.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                  Delete User
-              </button>
-            </div>
-            <div class="flex space-x-2 my-3">
-              <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-              <a routerLink="/Users">
-                  Back
-              </a>
-              </button>
-            </div>
-          </div>
-        </athlete-xperience-card>
+        </div>
       </div>
     </div>
   </div>
-  
+</div>

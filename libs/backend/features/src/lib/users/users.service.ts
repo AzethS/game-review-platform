@@ -3,9 +3,9 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { IUser, Id, IReview, IGame } from '@game-platform/shared/api';
-import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { CreateUserDto, UpdateUserDto } from '@game-platform/backend/dto';
@@ -20,23 +20,22 @@ export class UserService {
     @InjectModel('User') private readonly userModel: Model<IUser>,
     @InjectModel('Review') private readonly reviewModel: Model<IReview>,
     @InjectModel('Game') private readonly gameModel: Model<IGame>,
-    private jwtService: JwtService
+    private jwtService: JwtService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  /**
+   * Create a new user.
+   */
+  async create(createUserDto: CreateUserDto): Promise<string> {
     try {
       const hashedPassword = await this.hashPassword(createUserDto.password);
-      const userToSave = {
-        ...createUserDto,
-        password: hashedPassword,
-      };
+      const userToSave = { ...createUserDto, password: hashedPassword };
 
       const createdUser = new this.userModel(userToSave);
       const user = await createdUser.save();
       return user.id as string;
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Failed to create user');
     }
   }
 
@@ -45,16 +44,23 @@ export class UserService {
     return bcrypt.hash(password, saltOrRounds);
   }
 
+  /**
+   * Validate user credentials.
+   */
   async validateUser(email: string, pass: string): Promise<string | null> {
     try {
-      const user = await this.userModel.findOne({ emailAddress: email }).exec();
+      const user = await this.userModel
+        .findOne({ emailAddress: email })
+        .select('+password')
+        .exec();
+
       if (!user) {
         throw new NotFoundException(`User with email ${email} not found`);
       }
 
       const isPasswordMatching = await bcrypt.compare(pass, user.password);
       if (!isPasswordMatching) {
-        throw new UnauthorizedException('Invalid password');
+        throw new UnauthorizedException('Invalid credentials');
       }
 
       const payload = {
@@ -64,83 +70,119 @@ export class UserService {
         role: user.role,
       };
       const accessToken = await this.jwtService.signAsync(payload);
+
       return accessToken;
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Validation failed');
     }
   }
 
-  async changePassword(
-    userId: Id,
-    currentPassword: string,
-    newPassword: string
-  ): Promise<boolean> {
+  /**
+   * Change a user's password.
+   */
+  async changePassword(userId: Id, currentPassword: string, newPassword: string): Promise<boolean> {
     try {
-      const user = await this.userModel.findById(userId).exec();
+      const user = await this.userModel.findById(userId).select('+password').exec();
       if (!user) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      const isPasswordMatching = await bcrypt.compare(
-        currentPassword,
-        user.password
-      );
+      const isPasswordMatching = await bcrypt.compare(currentPassword, user.password);
       if (!isPasswordMatching) {
         throw new BadRequestException('Current password is incorrect');
       }
 
-      const hashedNewPassword = await this.hashPassword(newPassword);
-      user.password = hashedNewPassword;
+      user.password = await this.hashPassword(newPassword);
       await user.save();
 
       return true;
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Password change failed');
     }
   }
 
+  /**
+   * Retrieve all users.
+   */
   async getAll(): Promise<IUser[]> {
     try {
-      const users = await this.userModel.find().exec();
+      const users = await this.userModel
+        .find()
+        .populate('reviewsGiven')
+        .populate('ownedGames')
+        .exec();
       return users.map((user) => this.toIUser(user));
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Failed to retrieve users');
     }
   }
 
+  /**
+   * Retrieve all members.
+   */
+  async getAllMembers(): Promise<IUser[]> {
+    try {
+      const members = await this.userModel
+        .find({ role: 'Member' })
+        .populate('reviewsGiven')
+        .populate('ownedGames')
+        .exec();
+      return members.map((member) => this.toIUser(member));
+    } catch (error) {
+      this.handleError(error, 'Failed to retrieve members');
+    }
+  }
+
+  /**
+   * Retrieve a single user by ID.
+   */
   async getOne(id: Id): Promise<IUser> {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid ID format');
     }
     try {
-      const user = await this.userModel.findById(id).exec();
+      const user = await this.userModel
+        .findById(id)
+        .populate('reviewsGiven')
+        .populate('ownedGames')
+        .exec();
+
       if (!user) {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
       return this.toIUser(user);
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Failed to retrieve user');
     }
   }
 
-  async getOneByEmail(email: string): Promise<IUser> {
+  /**
+   * Retrieve a user by email address.
+   */
+  async getOneByEmail(email: string, includePassword = false): Promise<IUser> {
     try {
-      const user = await this.userModel.findOne({ emailAddress: email }).exec();
+      const query = this.userModel.findOne({ emailAddress: email });
+      if (includePassword) {
+        query.select('+password'); // Explicitly include the password field
+      }
+  
+      const user = await query.exec();
       if (!user) {
         throw new NotFoundException(`User with email ${email} not found`);
       }
-      return this.toIUser(user);
+  
+      return this.toIUser(user, includePassword);
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.logger.error(error instanceof Error ? error.message : 'Unknown error', UserService.name);
+      throw new BadRequestException('Failed to fetch user');
     }
   }
+  
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  /**
+   * Update user information.
+   */
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<string> {
     try {
       const user = await this.userModel.findById(id).exec();
       if (!user) {
@@ -152,96 +194,102 @@ export class UserService {
         .exec();
 
       if (!updatedUser) {
-        throw new NotFoundException(
-          `User with ID ${id} not found during update`
-        );
+        throw new NotFoundException(`User with ID ${id} not found during update`);
       }
 
-      // Update `reviewsGiven` references if necessary
-      if (updateUserDto.reviewsGiven !== undefined) {
+      if (updateUserDto.reviewsGiven) {
         await this.updateUserReferences(
           id,
           user.reviewsGiven || [],
           updateUserDto.reviewsGiven,
           this.reviewModel,
-          'reviewsGiven'
+          'reviewsGiven',
         );
       }
 
-      // Update `ownedGames` references if necessary
-      if (updateUserDto.ownedGames !== undefined) {
+      if (updateUserDto.ownedGames) {
         await this.updateUserReferences(
           id,
           user.ownedGames || [],
           updateUserDto.ownedGames,
           this.gameModel,
-          'ownedGames'
+          'ownedGames',
         );
       }
 
       return updatedUser.id as string;
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Update failed');
     }
   }
 
-  async delete(id: string): Promise<any> {
+  /**
+   * Delete a user by ID.
+   */
+  async delete(id: string): Promise<void> {
     try {
       const user = await this.userModel.findByIdAndDelete(id).exec();
       if (!user) {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
-      return user;
     } catch (error) {
-      Logger.error(error);
-      throw error;
+      this.handleError(error, 'Delete failed');
     }
   }
 
-  async getAllMembers(): Promise<IUser[]> {
-    try {
-      const members = await this.userModel.find({ role: 'Member' }).exec();
-      return members.map((member) => this.toIUser(member));
-    } catch (error) {
-      Logger.error(error);
-      throw error;
-    }
-  }
-
-  private toIUser(user: any): IUser {
+  /**
+   * Helper function to transform Mongoose document into IUser.
+   */
+  private toIUser(user: any, includePassword = false): IUser {
     const userObject = user.toObject();
     userObject.id = userObject._id?.toHexString();
     delete userObject._id;
-    delete userObject.password;
+
+    if (!includePassword) {
+      delete userObject.password;
+    }
+
     return userObject as IUser;
   }
 
+  /**
+   * Update references for related fields.
+   */
   private async updateUserReferences(
     userId: Id,
     currentRefs: Id[],
     newRefs: Id[],
     model: Model<any>,
-    fieldName: string
+    fieldName: string,
   ): Promise<void> {
-    // Remove old references
-    const toRemove = currentRefs.filter(
-      (id) => !newRefs.includes(id.toString())
-    );
+    const toRemove = currentRefs.filter((id) => !newRefs.includes(id.toString()));
+    const toAdd = newRefs.filter((id) => !currentRefs.includes(id.toString()));
+
     if (toRemove.length > 0) {
       await model.updateMany(
         { _id: { $in: toRemove } },
-        { $pull: { [fieldName]: userId } }
+        { $pull: { [fieldName]: userId } },
       );
     }
 
-    // Add new references
-    const toAdd = newRefs.filter((id) => !currentRefs.includes(id.toString()));
     if (toAdd.length > 0) {
       await model.updateMany(
         { _id: { $in: toAdd } },
-        { $push: { [fieldName]: userId } }
+        { $push: { [fieldName]: userId } },
       );
+    }
+  }
+
+  /**
+   * General error handling method.
+   */
+  private handleError(error: unknown, defaultMessage: string): never {
+    if (error instanceof Error) {
+      this.logger.error(error.message || defaultMessage, UserService.name);
+      throw new BadRequestException(error.message || defaultMessage);
+    } else {
+      this.logger.error(defaultMessage, UserService.name);
+      throw new BadRequestException(defaultMessage);
     }
   }
 }

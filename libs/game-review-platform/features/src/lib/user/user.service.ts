@@ -1,26 +1,34 @@
 import { Observable, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, tap } from 'rxjs/operators';
-import { ApiResponse, IUser } from '@AthleteXperience/shared/api';
+import { ApiResponse, IUser } from '@game-platform/shared/api';
 import { Injectable } from '@angular/core';
-import { environment } from '@AthleteXperience/shared/util-env';
+import { environment } from '@game-review-platform/shared/util-env';
 
 /**
  * See https://angular.io/guide/http#requesting-data-from-a-server
  */
+import { HttpHeaders } from '@angular/common/http';
+
 export const httpOptions = {
-    observe: 'body',
-    responseType: 'json',
+  headers: new HttpHeaders({
+    Authorization: `Bearer ${localStorage.getItem('token')}`, // Replace with your token storage mechanism
+  }),
+  observe: 'body' as const,
+  responseType: 'json' as const,
 };
+
 
 /**
  *
  *
  */
-@Injectable()
+@Injectable({
+    providedIn: 'root', // This makes the service available application-wide
+})
 export class UserService {
     apiUrl = environment.dataApiUrl;
-    endpoint = '/api/user';
+    endpoint = '/user';
 
     constructor(private readonly http: HttpClient) {}
 
@@ -91,18 +99,6 @@ export class UserService {
             ...httpOptions
             }).pipe(
             tap(() => console.log(`Updated user with id: ${userId}`)),
-            catchError(this.handleError)
-        );
-    }
-
-    getTrainers(options?: any): Observable<IUser[] | null> {
-        return this.http.get<ApiResponse<IUser[]>>(`${this.apiUrl}${this.endpoint}/trainers`, {
-            ...options,
-            ...httpOptions,
-        })
-        .pipe(
-            map((response: any) => response.results as IUser[]),
-            tap(console.log),
             catchError(this.handleError)
         );
     }

@@ -1,0 +1,33 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+  
+  .text-green-500 {
+    color: #48bb78;
+  }
+  
+  .text-red-500 {
+    color: #f56565;
+  }
+  
+  .text-blue-500 {
+    color: #4299e1;
+  }
+  
+  .border {
+    border: 1px solid #e2e8f0;
+  }
+  
+  .shadow-md {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .rounded {
+    border-radius: 0.25rem;
+  }
+  

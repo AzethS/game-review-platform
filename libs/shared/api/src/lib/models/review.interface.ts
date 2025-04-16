@@ -12,6 +12,11 @@ export interface IReview {
   comment?: string; // Optional comment
   createdAt: Date;
 }
+export interface IPopulatedReview extends IReview {
+  userName: string; // Populated user name
+  gameTitle: string; // Populated game title
+}
+
 
 // CRUD utility types
 export type ICreateReview = Pick<IReview, 'userId' | 'gameId' | 'rating' | 'comment'>;

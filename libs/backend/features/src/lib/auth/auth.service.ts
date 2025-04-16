@@ -19,14 +19,12 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<object | null> {
     this.logger.log(`Validating user with email: ${email}`, AuthService.name);
-
+  
     try {
-      const user = await this.userService.getOneByEmail(email);
-      this.logger.debug(
-        `Fetched user: ${JSON.stringify(user)}`,
-        AuthService.name
-      );
-
+      // Fetch the user and ensure password is included
+      const user = await this.userService.getOneByEmail(email, true); // Explicitly fetch password
+      this.logger.debug(`Fetched user: ${JSON.stringify(user)}`, AuthService.name);
+  
       if (!user || !user.password) {
         this.logger.warn(
           `User not found or password missing for email: ${email}`,
@@ -34,53 +32,42 @@ export class AuthService {
         );
         throw new UnauthorizedException('Invalid credentials');
       }
-
+  
+      // Compare the provided password with the stored hashed password
       const isPasswordMatching = await bcrypt.compare(pass, user.password);
-      this.logger.debug(
-        `Password match result: ${isPasswordMatching}`,
-        AuthService.name
-      );
-
+      this.logger.debug(`Password match result: ${isPasswordMatching}`, AuthService.name);
+  
       if (!isPasswordMatching) {
-        this.logger.warn(
-          `Password mismatch for email: ${email}`,
-          AuthService.name
-        );
+        this.logger.warn(`Password mismatch for email: ${email}`, AuthService.name);
         throw new UnauthorizedException('Invalid credentials');
       }
-
+  
+      // Prepare payload for JWT token
       const payload = {
         sub: user.id,
         username: user.emailAddress,
         name: user.name,
         role: user.role,
       };
-
+  
+      // Sign the token with expiry
       const accessToken = await this.jwtService.signAsync(payload);
       const expiresAt = new Date();
       expiresAt.setSeconds(expiresAt.getSeconds() + 3600);
-
-      const response = {
+  
+      // Return response with token
+      return {
         accessToken,
         expiresAt,
         status: 'success',
         result: 'User authorized successfully',
       };
-
-      return response;
     } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error(error.message, AuthService.name);
-        throw error;
-      } else {
-        this.logger.error(
-          'An unexpected error occurred during user validation',
-          AuthService.name
-        );
-        throw new UnauthorizedException('An unknown error occurred');
-      }
+      this.logger.error(error instanceof Error ? error.message : 'Unknown error', AuthService.name);
+      throw new UnauthorizedException('Validation failed');
     }
   }
+  
 
   async logout(token: string): Promise<{ message: string }> {
     return { message: 'Logged out successfully' };
