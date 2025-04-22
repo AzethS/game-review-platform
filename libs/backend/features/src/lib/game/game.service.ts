@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
-import { IGame, Id, ICompany, IPlatform } from '@game-platform/shared/api';
+import { IGame, ICompany, IPlatform } from '@game-platform/shared/api';
 import { CreateGameDto, UpdateGameDto } from '@game-platform/backend/dto';
 
 @Injectable()
@@ -18,204 +18,186 @@ export class GameService {
     @InjectModel('Company') private readonly companyModel: Model<ICompany>,
     @InjectModel('Platform') private readonly platformModel: Model<IPlatform>
   ) {}
-
-  // Convert Mongoose document to IGame
   private toIGame(game: any): IGame {
     const gameObject = game.toObject();
+
+    // Convert nested IDs properly
+    const reviews =
+      gameObject.reviews?.map((review: any) => ({
+        ...review,
+        id: review._id?.toString(),
+        userId:
+          review.userId && typeof review.userId === 'object'
+            ? {
+                id: review.userId._id?.toString(),
+                name: review.userId.name,
+              }
+            : review.userId,
+      })) ?? [];
+
     return {
       ...gameObject,
-      id: gameObject._id.toHexString(),
+      id: gameObject._id?.toString(),
+      reviews,
     };
   }
 
-  /**
-   * Create a new game
-   */
   async create(createGameDto: CreateGameDto): Promise<string> {
     try {
-      const newGame = new this.gameModel(createGameDto);
+      const gameDoc = {
+        ...createGameDto,
+        createdBy: createGameDto.createdBy.id,
+        platform: createGameDto.platform.map((p) => p.id),
+      };
+
+      const newGame = new this.gameModel(gameDoc);
       const savedGame = await newGame.save();
 
-      // Update the referenced company's gamesCreated array
       await this.companyModel.findByIdAndUpdate(
-        createGameDto.createdBy,
+        gameDoc.createdBy,
         { $push: { gamesCreated: savedGame._id } },
         { new: true }
       );
 
-      // Update the referenced platforms' games array
       await this.platformModel.updateMany(
-        { _id: { $in: createGameDto.platform } },
+        { _id: { $in: gameDoc.platform } },
         { $push: { games: savedGame._id } },
         { new: true }
       );
 
       return savedGame._id.toHexString();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to create game.');
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Failed to create game'
+      );
     }
   }
 
-  /**
-   * Retrieve all games
-   */
   async getAll(): Promise<IGame[]> {
     try {
       const games = await this.gameModel
         .find()
         .populate('platform')
         .populate('createdBy')
-        .populate('reviews')
+        .populate({ path: 'reviews', populate: { path: 'userId' } })
         .exec();
 
       return games.map(this.toIGame);
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to retrieve games.');
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Failed to retrieve games'
+      );
     }
   }
 
-  /**
-   * Retrieve a single game by ID
-   */
   async getOne(id: string): Promise<IGame> {
-    try {
-      if (!isValidObjectId(id)) {
-        throw new BadRequestException('Invalid ID format.');
-      }
+    const game = await this.gameModel
+      .findById(id)
+      .populate('platform')
+      .populate('createdBy')
+      .populate({ path: 'reviews', populate: { path: 'userId' } })
+      .exec();
 
-      const game = await this.gameModel
-        .findById(id)
-        .populate('platform')
-        .populate('createdBy')
-        .populate('reviews')
-        .exec();
-
-      if (!game) {
-        throw new NotFoundException(`Game with ID ${id} not found.`);
-      }
-
-      return this.toIGame(game);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException(`Failed to retrieve game with ID ${id}.`);
-    }
+    if (!game) throw new NotFoundException('Game not found');
+    return this.toIGame(game);
   }
 
-  /**
-   * Update a game by ID
-   */
   async update(id: string, updateGameDto: UpdateGameDto): Promise<string> {
     try {
-      const game = await this.gameModel.findById(id).exec();
-      if (!game) {
-        throw new NotFoundException(`Game with ID ${id} not found.`);
-      }
+      const existingGame = await this.gameModel.findById(id).exec();
+      if (!existingGame)
+        throw new NotFoundException(`Game with ID ${id} not found`);
+
+      const newCompanyId = updateGameDto.createdBy?.id;
+      const newPlatformIds = updateGameDto.platform?.map((p) => p.id);
 
       const updatedGame = await this.gameModel
-        .findByIdAndUpdate(id, updateGameDto, { new: true })
+        .findByIdAndUpdate(
+          id,
+          {
+            ...updateGameDto,
+            createdBy: newCompanyId ?? existingGame.createdBy,
+            platform: newPlatformIds ?? existingGame.platform,
+          },
+          { new: true }
+        )
         .exec();
 
-      if (!updatedGame) {
-        throw new NotFoundException(`Failed to update game with ID ${id}.`);
+      if (!updatedGame)
+        throw new NotFoundException(`Failed to update game with ID ${id}`);
+
+      if (newCompanyId && newCompanyId !== existingGame.createdBy.toString()) {
+        await this.companyModel.findByIdAndUpdate(existingGame.createdBy, {
+          $pull: { gamesCreated: id },
+        });
+        await this.companyModel.findByIdAndUpdate(newCompanyId, {
+          $push: { gamesCreated: id },
+        });
       }
 
-      // Update company gamesCreated array if createdBy is changed
-      if (
-        updateGameDto.createdBy &&
-        updateGameDto.createdBy !== game.createdBy.toString()
-      ) {
-        await this.companyModel.findByIdAndUpdate(
-          game.createdBy,
-          { $pull: { gamesCreated: id } } // Remove from old company
-        );
-        await this.companyModel.findByIdAndUpdate(
-          updateGameDto.createdBy,
-          { $push: { gamesCreated: id } } // Add to new company
-        );
-      }
-
-      // Update platforms if platform is changed
-      if (updateGameDto.platform) {
-        await this.platformModel.updateMany(
-          { _id: { $in: game.platform } },
-          { $pull: { games: id } } // Remove from old platforms
+      if (newPlatformIds) {
+        const oldPlatformIds = (existingGame.platform || []).map((p) =>
+          p.toString()
         );
         await this.platformModel.updateMany(
-          { _id: { $in: updateGameDto.platform } },
-          { $push: { games: id } } // Add to new platforms
+          { _id: { $in: oldPlatformIds } },
+          { $pull: { games: id } }
+        );
+        await this.platformModel.updateMany(
+          { _id: { $in: newPlatformIds } },
+          { $addToSet: { games: id } }
         );
       }
 
       return updatedGame._id.toHexString();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException(`Failed to update game with ID ${id}.`);
-    }
-  }
-
-  /**
-   * Delete a game by ID
-   */
-  async delete(id: string): Promise<void> {
-    try {
-      const game = await this.gameModel.findById(id).exec();
-      if (!game) {
-        throw new NotFoundException(`Game with ID ${id} not found.`);
-      }
-
-      // Remove the game reference from related company and platforms
-      await this.companyModel.findByIdAndUpdate(game.createdBy, {
-        $pull: { gamesCreated: id },
-      });
-      await this.platformModel.updateMany(
-        { _id: { $in: game.platform } },
-        { $pull: { games: id } }
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Failed to update game'
       );
-
-      await this.gameModel.findByIdAndDelete(id).exec();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException(`Failed to delete game with ID ${id}.`);
     }
   }
 
-  /**
-   * Add a platform to a game
-   */
+  async delete(id: string): Promise<void> {
+    const game = await this.gameModel.findById(id).exec();
+    if (!game) throw new NotFoundException(`Game with ID ${id} not found`);
+
+    await this.companyModel.findByIdAndUpdate(game.createdBy, {
+      $pull: { gamesCreated: id },
+    });
+    await this.platformModel.updateMany(
+      { _id: { $in: game.platform } },
+      { $pull: { games: id } }
+    );
+
+    await this.gameModel.findByIdAndDelete(id).exec();
+  }
+
   async addPlatform(gameId: string, platformId: string): Promise<IGame> {
     const game = await this.gameModel.findById(gameId).exec();
     if (!game) {
-      throw new NotFoundException(`Game with ID ${gameId} not found.`);
+      throw new NotFoundException(`Game with ID ${gameId} not found`);
     }
-    if (!game.platform.includes(platformId)) {
-      game.platform.push(platformId);
+
+    const currentIds = (game.platform || []).map((p) =>
+      typeof p === 'string' ? p : p.id
+    );
+    if (!currentIds.includes(platformId)) {
+      (game.platform as (string | IPlatform)[]).push(platformId);
       await game.save();
     }
-    return this.toIGame(game);
+
+    return this.toIGame(await game.populate('platform'));
   }
 
-  /**
-   * Remove a platform from a game
-   */
   async removePlatform(gameId: string, platformId: string): Promise<IGame> {
     const game = await this.gameModel.findById(gameId).exec();
-    if (!game) {
-      throw new NotFoundException(`Game with ID ${gameId} not found.`);
-    }
-    game.platform = game.platform.filter((id) => id.toString() !== platformId);
+    if (!game) throw new NotFoundException(`Game with ID ${gameId} not found`);
+
+    game.platform = game.platform.filter(
+      (p) => (typeof p === 'string' ? p : p.id) !== platformId
+    );
     await game.save();
-    return this.toIGame(game);
+
+    return this.toIGame(await game.populate('platform'));
   }
 }

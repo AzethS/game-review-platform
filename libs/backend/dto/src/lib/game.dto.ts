@@ -4,21 +4,36 @@ import {
   IsEnum,
   IsDate,
   IsOptional,
-  IsMongoId,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  ICreateGame,
-  IUpdateGame,
-  IUpsertGame,
-  GameGenre,
-} from '@game-platform/shared/api';
+import { GameGenre } from '@game-platform/shared/api';
+import { PlatformRefDto } from './platform.dto';
+import { CompanyRefDto } from './company.dto';
+import { ReviewRefDto } from './review.dto';
+
+/**
+ * Reference DTO for Game
+ */
+export class GameRefDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
 
 /**
  * DTO for creating a new game
  */
-export class CreateGameDto implements ICreateGame {
+export class CreateGameDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
@@ -27,61 +42,71 @@ export class CreateGameDto implements ICreateGame {
   @IsNotEmpty()
   description!: string;
 
-  @IsEnum(GameGenre)
-  @IsNotEmpty()
+  @IsArray()
+  @IsEnum(GameGenre, { each: true })
   genre!: GameGenre[];
 
   @IsNotEmpty()
   @IsArray()
-  @IsMongoId({ each: true })
-  platform!: string[]; // Reference to Platform
+  @ValidateNested({ each: true })
+  @Type(() => PlatformRefDto)
+  platform!: PlatformRefDto[];
 
   @IsDate()
   @Type(() => Date)
   @IsNotEmpty()
   releaseDate!: Date;
 
-  @IsMongoId()
+  @ValidateNested()
+  @Type(() => CompanyRefDto)
   @IsNotEmpty()
-  createdBy!: string; // Reference to Company
+  createdBy!: CompanyRefDto;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  reviews!: string[]; // Reference to reviews
+  @ValidateNested({ each: true })
+  @Type(() => ReviewRefDto)
+  reviews?: ReviewRefDto[];
 }
 
 /**
- * DTO for updating an existing game
+ * DTO for updating a game
  */
-export class UpdateGameDto implements IUpdateGame {
-  @IsString()
+export class UpdateGameDto {
   @IsOptional()
+  @IsString()
   title?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsEnum(GameGenre)
   @IsOptional()
   @IsArray()
+  @IsEnum(GameGenre, { each: true })
   genre?: GameGenre[];
 
-  @IsMongoId()
   @IsOptional()
-  platform?: string[]; // Reference to Platform
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PlatformRefDto)
+  platform?: PlatformRefDto[];
 
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
-  @IsOptional()
   releaseDate?: Date;
 
-  @IsMongoId()
   @IsOptional()
-  createdBy?: string; // Reference to Company
+  @ValidateNested()
+  @Type(() => CompanyRefDto)
+  createdBy?: CompanyRefDto;
 }
-export class UpsertGameDto implements IUpsertGame {
+
+/**
+ * DTO for upserting a game
+ */
+export class UpsertGameDto {
   @IsNotEmpty()
   @IsString()
   id!: string;
@@ -94,26 +119,29 @@ export class UpsertGameDto implements IUpsertGame {
   @IsNotEmpty()
   description!: string;
 
-  @IsEnum(GameGenre)
-  @IsNotEmpty()
+  @IsArray()
+  @IsEnum(GameGenre, { each: true })
   genre!: GameGenre[];
 
   @IsNotEmpty()
   @IsArray()
-  @IsMongoId({ each: true })
-  platform!: string[]; // Reference to Platform
+  @ValidateNested({ each: true })
+  @Type(() => PlatformRefDto)
+  platform!: PlatformRefDto[];
 
   @IsDate()
   @Type(() => Date)
   @IsNotEmpty()
   releaseDate!: Date;
 
-  @IsMongoId()
+  @ValidateNested()
+  @Type(() => CompanyRefDto)
   @IsNotEmpty()
-  createdBy!: string; // Reference to Company
+  createdBy!: CompanyRefDto;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  reviews!: string[]; // Reference to reviews
+  @ValidateNested({ each: true })
+  @Type(() => ReviewRefDto)
+  reviews?: ReviewRefDto[];
 }

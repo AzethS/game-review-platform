@@ -1,131 +1,71 @@
-<nav class="bg-white shadow dark:bg-gray-800">
-  <div class="container mx-auto flex justify-between items-center p-4">
-    <!-- Brand Logo -->
-    <a routerLink="/" class="text-2xl font-bold text-gray-800 dark:text-white">
-      Game Review Platform
+<nav class="bg-white dark:bg-gray-900 shadow-md">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+    <!-- Logo -->
+    <a routerLink="/" class="text-3xl font-extrabold text-gray-800 dark:text-white">
+      GameReview
     </a>
 
-    <!-- Navigation Links -->
+    <!-- Desktop Menu -->
     <div class="hidden md:flex items-center space-x-6">
-      <a
-        routerLink="/dashboard"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        Dashboard
-      </a>
-      <a
-        routerLink="/reviews"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        Reviews
-      </a>
-      <a
-        routerLink="/users"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-        *ngIf="currentUser?.role === 'Admin'"
-      >
-        Users
-      </a>
-      <a
-        routerLink="/about"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        About
-      </a>
+      <a routerLink="/games" class="nav-link">Games</a>
+      <a *ngIf="currentUser()?.role === 'Admin'" routerLink="/users" class="nav-link">Users</a>
+      <a routerLink="/about" class="nav-link">About</a>
     </div>
 
-    <!-- User Actions -->
+    <!-- User Section -->
     <div class="flex items-center space-x-4">
-      <!-- Theme Toggle Button -->
-      <button
-        class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition"
-        (click)="toggleDarkMode()"
-      >
+      <!-- Theme Toggle -->
+      <button (click)="toggleDarkMode()" class="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition">
         Toggle Theme
       </button>
 
-      <!-- User Info -->
-      <div *ngIf="isAuth()" class="flex items-center space-x-4">
-        <img
-          [src]="profilePicture"
-          alt="Profile"
-          class="w-8 h-8 rounded-full border border-gray-300"
-        />
-        <p class="text-gray-800 dark:text-gray-200 font-medium">
-          {{ currentUser?.name }}
-        </p>
-        <button
-          class="text-red-500 hover:text-red-700 transition"
-          (click)="logout()"
-        >
+      <!-- Authenticated User -->
+      <div *ngIf="isAuth()" class="flex items-center space-x-3">
+        <img [src]="'https://randomuser.me/api/portraits/men/22.jpg'" alt="Profile" class="w-9 h-9 rounded-full border border-gray-300" />
+        <a [routerLink]="['/users/details', currentUser()?.id]" class="text-gray-800 dark:text-gray-200 font-medium hover:underline">
+          {{ currentUser()?.name }}
+        </a>
+        <button (click)="logout()" class="text-red-500 hover:text-red-700 transition font-medium">
           Logout
         </button>
       </div>
 
-      <!-- Login Link -->
+      <!-- Guest User -->
       <div *ngIf="!isAuth()">
-        <a
-          routerLink="/login"
-          class="text-blue-500 hover:text-blue-700 font-semibold transition"
-        >
+        <a routerLink="/login" class="text-blue-600 hover:text-blue-800 font-semibold transition">
           Login
         </a>
       </div>
-    </div>
 
-    <!-- Mobile Menu Toggle -->
-    <button
-      class="md:hidden text-gray-800 dark:text-white focus:outline-none"
-      (click)="toggleMenu()"
-    >
-      ☰
-    </button>
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden text-gray-700 dark:text-white" (click)="toggleMenu()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <!-- Mobile Menu -->
-  <div *ngIf="isMenuOpen" class="md:hidden bg-gray-100 dark:bg-gray-700">
-    <div class="flex flex-col items-start p-4 space-y-2">
-      <a
-        routerLink="/dashboard"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        Dashboard
+  <div *ngIf="isMenuOpen" class="md:hidden bg-gray-50 dark:bg-gray-800 px-4 py-2 space-y-3">
+    <a routerLink="/reviews" class="nav-link">Reviews</a>
+    <a *ngIf="currentUser()?.role === 'Admin'" routerLink="/users" class="nav-link">Users</a>
+    <a routerLink="/about" class="nav-link">About</a>
+    <div *ngIf="isAuth()">
+      <button (click)="logout()" class="w-full text-left text-red-500 hover:text-red-700 transition font-medium">
+        Logout
+      </button>
+    </div>
+    <div *ngIf="!isAuth()">
+      <a routerLink="/login" class="text-blue-600 hover:text-blue-800 font-semibold transition">
+        Login
       </a>
-      <a
-        routerLink="/reviews"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        Reviews
-      </a>
-      <a
-        routerLink="/users"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-        *ngIf="currentUser?.role === 'Admin'"
-      >
-        Users
-      </a>
-      <a
-        routerLink="/about"
-        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
-      >
-        About
-      </a>
-      <div *ngIf="isAuth()">
-        <button
-          class="text-red-500 hover:text-red-700 transition w-full text-left"
-          (click)="logout()"
-        >
-          Logout
-        </button>
-      </div>
-      <div *ngIf="!isAuth()">
-        <a
-          routerLink="/login"
-          class="text-blue-500 hover:text-blue-700 font-semibold transition"
-        >
-          Login
-        </a>
-      </div>
     </div>
   </div>
+
+  <style>
+    .nav-link {
+      @apply text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium;
+    }
+  </style>
 </nav>

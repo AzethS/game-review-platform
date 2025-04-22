@@ -3,15 +3,25 @@ import {
   IsString,
   IsOptional,
   IsArray,
-  IsMongoId,
+  ValidateNested,
 } from 'class-validator';
-import {
-  ICreatePlatform,
-  IUpdatePlatform,
-  IUpsertPlatform,
-} from '@game-platform/shared/api';
+import { Type } from 'class-transformer';
+import { GameRefDto } from './game.dto';
 
-export class CreatePlatformDto implements ICreatePlatform {
+/**
+ * Reference DTO for platform
+ */
+export class PlatformRefDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+}
+
+export class CreatePlatformDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -22,11 +32,12 @@ export class CreatePlatformDto implements ICreatePlatform {
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  games: string[] = []; // Add games
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  games: GameRefDto[] = [];
 }
 
-export class UpdatePlatformDto implements IUpdatePlatform {
+export class UpdatePlatformDto {
   @IsString()
   @IsOptional()
   name?: string;
@@ -37,11 +48,12 @@ export class UpdatePlatformDto implements IUpdatePlatform {
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  games?: string[]; // Add/remove games
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  games?: GameRefDto[];
 }
 
-export class UpsertPlatformDto implements IUpsertPlatform {
+export class UpsertPlatformDto {
   @IsNotEmpty()
   @IsString()
   id!: string;
@@ -56,6 +68,7 @@ export class UpsertPlatformDto implements IUpsertPlatform {
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  games!: string[]; // Add games
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  games!: GameRefDto[];
 }

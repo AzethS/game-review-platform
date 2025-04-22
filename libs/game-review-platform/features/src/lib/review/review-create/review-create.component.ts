@@ -1,47 +1,58 @@
-import { Component } from '@angular/core';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { ReviewService } from '../review.service';
-import { Router } from '@angular/router';
-import { ICreateReview } from '@game-platform/shared/api';
+import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
+import {
+  FormGroup,
+  FormControl,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReviewService } from '../review.service';
+import { ICreateReview, IGame, IUser } from '@game-platform/shared/api';
 
 @Component({
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
   selector: 'lib-review-create',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './review-create.component.html',
 })
 export class ReviewCreateComponent {
+  @Input() gameId!: string;
+  @Input() userId!: string;
+  @Output() reviewCreated = new EventEmitter<void>();
+
   reviewForm = new FormGroup({
-    userId: new FormControl<string>('', Validators.required),
-    gameId: new FormControl<string>('', Validators.required),
-    rating: new FormControl<number | null>(null, [Validators.required, Validators.min(0), Validators.max(5)]),
+    rating: new FormControl<number | null>(null, [
+      Validators.required,
+      Validators.min(0),
+      Validators.max(5),
+    ]),
     comment: new FormControl<string | null>(null, [Validators.maxLength(500)]),
   });
 
-  successMessage: string | null = null;
-  errorMessage: string | null = null;
-
-  constructor(private reviewService: ReviewService, private router: Router) {}
+  constructor(private reviewService: ReviewService) {}
 
   onSubmit(): void {
+    if (!this.gameId || !this.userId) return;
+
     if (this.reviewForm.valid) {
-      const reviewData: ICreateReview = {
-        userId: this.reviewForm.value.userId!,
-        gameId: this.reviewForm.value.gameId!,
+      const payload: ICreateReview = {
+        userId: this.userId as any, // pass plain string ID
+        gameId: this.gameId as any, // pass plain string ID
         rating: this.reviewForm.value.rating!,
-        comment: this.reviewForm.value.comment || undefined,
+        comment: this.reviewForm.value.comment ?? '',
       };
 
-      this.reviewService.create(reviewData).subscribe({
+      this.reviewService.create(payload).subscribe({
         next: () => {
-          this.successMessage = 'Review created successfully!';
-          this.router.navigate(['/reviews']);
+          this.reviewCreated.emit();
+          this.reviewForm.reset();
+          this.reviewService.syncNeo4jGames().subscribe({
+            next: () => console.log('[SYNC] Neo4j sync successful'),
+            error: (err) => console.warn('[SYNC] Neo4j sync failed', err),
+          });
         },
         error: (err) => {
-          this.errorMessage = 'Error creating review';
-          console.error(err);
+          console.error('Failed to create review', err);
         },
       });
     }

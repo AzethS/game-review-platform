@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Neo4jModule } from 'nest-neo4j';
 
 import { AppController } from './app.controller';
@@ -8,22 +8,20 @@ import { Neo4jBackendModule } from '@gamereview/backend/neo4j';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // MongoDB connection
+    MongooseModule.forRoot('mongodb://127.0.0.1:27017/game-review-platform'),
 
-    Neo4jModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        scheme: config.get<string>('NEO4J_SCHEME', 'neo4j'),
-        host: config.get<string>('NEO4J_HOST', 'localhost'),
-        port: config.get<number>('NEO4J_PORT', 7687),
-        username: config.get<string>('NEO4J_USERNAME', 'neo4j'),
-        password: config.get<string>('NEO4J_PASSWORD', ''),
-        database: config.get<string>('NEO4J_DATABASE', 'neo4j'),
-      }),
+    // Neo4j direct bolt connection
+    Neo4jModule.forRoot({
+      scheme: 'bolt',
+      host: '127.0.0.1',
+      port: 7687,
+      username: 'neo4j',
+      password: 'datagame',         
+      database: 'neo4j',
     }),
 
-    Neo4jBackendModule, 
+    Neo4jBackendModule,
   ],
   controllers: [AppController],
   providers: [AppService],

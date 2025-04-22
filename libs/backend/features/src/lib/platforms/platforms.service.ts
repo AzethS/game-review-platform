@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
-import { IPlatform, IGame, Id } from '@game-platform/shared/api';
+import { IPlatform, IGame } from '@game-platform/shared/api';
 import {
   CreatePlatformDto,
   UpdatePlatformDto,
@@ -21,43 +21,36 @@ export class PlatformService {
     @InjectModel('Game') private readonly gameModel: Model<IGame>
   ) {}
 
-  // Convert Mongoose document to IPlatform
   private toIPlatform(platform: any): IPlatform {
-    const platformObject = platform.toObject();
+    const obj = platform.toObject();
     return {
-      ...platformObject,
-      id: platformObject._id.toHexString(),
+      ...obj,
+      id: obj._id.toHexString(),
     };
   }
 
-  /**
-   * Create a new platform
-   */
   async create(createPlatformDto: CreatePlatformDto): Promise<string> {
     try {
       const newPlatform = new this.platformModel(createPlatformDto);
       const savedPlatform = await newPlatform.save();
 
-      // Update games to reference this platform
-      if (createPlatformDto.games && createPlatformDto.games.length > 0) {
-        await this.gameModel.updateMany(
-          { _id: { $in: createPlatformDto.games } },
-          { $push: { platform: savedPlatform._id } }
-        );
-      }
+      const gameIds = createPlatformDto.games.map((g) =>
+        typeof g === 'string' ? g : g.id
+      );
+      await this.gameModel.updateMany(
+        { _id: { $in: gameIds } },
+        { $push: { platform: savedPlatform._id } },
+        { multi: true }
+      );
 
       return savedPlatform._id.toHexString();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to create platform.');
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Create failed'
+      );
     }
   }
 
-  /**
-   * Retrieve all platforms
-   */
   async getAll(): Promise<IPlatform[]> {
     try {
       const platforms = await this.platformModel
@@ -66,44 +59,26 @@ export class PlatformService {
         .exec();
       return platforms.map(this.toIPlatform);
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to retrieve platforms.');
-    }
-  }
-
-  /**
-   * Retrieve a single platform by ID
-   */
-  async getOne(id: string): Promise<IPlatform> {
-    try {
-      if (!isValidObjectId(id)) {
-        throw new BadRequestException('Invalid ID format.');
-      }
-
-      const platform = await this.platformModel
-        .findById(id)
-        .populate('games')
-        .exec();
-      if (!platform) {
-        throw new NotFoundException(`Platform with ID ${id} not found.`);
-      }
-
-      return this.toIPlatform(platform);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
       throw new BadRequestException(
-        `Failed to retrieve platform with ID ${id}.`
+        error instanceof Error ? error.message : 'Retrieve failed'
       );
     }
   }
 
-  /**
-   * Update a platform by ID
-   */
+  async getOne(id: string): Promise<IPlatform> {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid ID format.');
+    }
+    const platform = await this.platformModel
+      .findById(id)
+      .populate('games')
+      .exec();
+    if (!platform) {
+      throw new NotFoundException(`Platform with ID ${id} not found.`);
+    }
+    return this.toIPlatform(platform);
+  }
+
   async update(
     id: string,
     updatePlatformDto: UpdatePlatformDto
@@ -119,126 +94,85 @@ export class PlatformService {
         .exec();
 
       if (!updatedPlatform) {
-        throw new NotFoundException(`Platform with ID ${id} not found.`);
+        throw new NotFoundException(`Failed to update platform with ID ${id}.`);
       }
 
-      // Safely handle `games` updates
-      const newGames = updatePlatformDto.games ?? []; // Default to an empty array if `games` is undefined
-      const oldGames = platform.games.map((gameId) => gameId.toString());
-
-      // Determine removed and added games
-      const removedGames = oldGames.filter(
-        (gameId) => !newGames.includes(gameId)
-      );
-      const addedGames = newGames.filter(
-        (gameId) => !oldGames.includes(gameId)
-      );
-
-      if (removedGames.length > 0) {
-        await this.gameModel.updateMany(
-          { _id: { $in: removedGames } },
-          { $pull: { platform: id } }
+      if (updatePlatformDto.games) {
+        const newGameIds = updatePlatformDto.games.map((g) =>
+          typeof g === 'string' ? g : g.id
         );
-      }
 
-      if (addedGames.length > 0) {
         await this.gameModel.updateMany(
-          { _id: { $in: addedGames } },
-          { $push: { platform: id } }
+          { _id: { $in: platform.games } },
+          { $pull: { platform: id } },
+          { multi: true }
+        );
+
+        await this.gameModel.updateMany(
+          { _id: { $in: newGameIds } },
+          { $push: { platform: id } },
+          { multi: true }
         );
       }
 
       return updatedPlatform._id.toHexString();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException(`Failed to update platform with ID ${id}.`);
-    }
-  }
-
-  /**
-   * Delete a platform by ID
-   */
-  async delete(id: string): Promise<void> {
-    try {
-      const platform = await this.platformModel.findById(id).exec();
-      if (!platform) {
-        throw new NotFoundException(`Platform with ID ${id} not found.`);
-      }
-
-      // Remove the platform reference from all related games
-      await this.gameModel.updateMany(
-        { platform: id },
-        { $pull: { platform: id } }
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Update failed'
       );
-
-      await this.platformModel.findByIdAndDelete(id).exec();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException(`Failed to delete platform with ID ${id}.`);
     }
   }
 
-  /**
-   * Add a game to the platform
-   */
-  async addGame(platformId: Id, gameId: Id): Promise<IPlatform> {
-    try {
-      const platform = await this.platformModel.findById(platformId).exec();
-      if (!platform) {
-        throw new NotFoundException(
-          `Platform with ID ${platformId} not found.`
-        );
-      }
-
-      if (!platform.games.includes(gameId)) {
-        platform.games.push(gameId);
-        await platform.save();
-
-        // Update the game to reference this platform
-        await this.gameModel.findByIdAndUpdate(gameId, {
-          $push: { platform: platformId },
-        });
-      }
-
-      return this.toIPlatform(platform);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to add game to platform.');
+  async delete(id: string): Promise<void> {
+    const platform = await this.platformModel.findById(id).exec();
+    if (!platform) {
+      throw new NotFoundException(`Platform with ID ${id} not found.`);
     }
+
+    await this.gameModel.updateMany(
+      { _id: { $in: platform.games } },
+      { $pull: { platform: id } },
+      { multi: true }
+    );
+
+    await this.platformModel.findByIdAndDelete(id).exec();
   }
 
-  /**
-   * Remove a game from the platform
-   */
-  async removeGame(platformId: Id, gameId: Id): Promise<IPlatform> {
-    try {
-      const platform = await this.platformModel.findById(platformId).exec();
-      if (!platform) {
-        throw new NotFoundException(
-          `Platform with ID ${platformId} not found.`
-        );
-      }
-
-      platform.games = platform.games.filter((id) => id.toString() !== gameId);
+  async addGame(platformId: string, gameId: string): Promise<IPlatform> {
+    const platform = await this.platformModel.findById(platformId).exec();
+    if (!platform) {
+      throw new NotFoundException(`Platform with ID ${platformId} not found.`);
+    }
+  
+    const game = await this.gameModel.findById(gameId).exec();
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found.`);
+    }
+  
+    const gameExists = (platform.games || []).some(
+      (g) => (typeof g === 'string' ? g === gameId : g.id === gameId)
+    );
+  
+    if (!gameExists) {
+      platform.games = [...(platform.games || []), game];
       await platform.save();
-
-      // Update the game to remove the platform reference
-      await this.gameModel.findByIdAndUpdate(gameId, {
-        $pull: { platform: platformId },
-      });
-
-      return this.toIPlatform(platform);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Failed to remove game from platform.');
     }
+  
+    return this.toIPlatform(await platform.populate('games'));
+  }
+  
+  async removeGame(platformId: string, gameId: string): Promise<IPlatform> {
+    const platform = await this.platformModel.findById(platformId).exec();
+    if (!platform) {
+      throw new NotFoundException(`Platform with ID ${platformId} not found.`);
+    }
+
+    // Filter using string comparison
+    platform.games = (platform.games || []).filter(
+      (g) => (typeof g === 'string' ? g : g.id) !== gameId
+    );
+
+    await platform.save();
+    return this.toIPlatform(await platform.populate('games'));
   }
 }

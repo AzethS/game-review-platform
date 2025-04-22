@@ -1,30 +1,36 @@
 import { Route } from '@angular/router';
 import { 
   LoginComponent, 
-  DashboardComponent, 
+  // DashboardComponent, 
+  HomeComponent,
   AuthGuard, 
-  ReviewListComponent, 
-  ReviewCreateComponent, 
-  ReviewEditComponent, 
-  ReviewDetailsComponent, 
+  // ReviewListComponent, 
+  // ReviewCreateComponent, 
+  // ReviewEditComponent, 
+  // ReviewDetailsComponent, 
   UserListComponent, 
   UserCreateComponent, 
   UserEditComponent, 
-  UserDetailsComponent 
+  UserDetailsComponent, 
+  GameListComponent,
+  GameDetailComponent,
+  RegisterComponent
 } from '@fairys-nx-workshop/features';
 import { AboutComponent, PageNotFoundComponent, UnauthorizedComponent } from '@fairys-nx-workshop/ui';
 
 export const appRoutes: Route[] = [
-  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'home', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
 
   
   // Reviews routes
-  { path: 'reviews', component: ReviewListComponent, canActivate: [AuthGuard] },
-  { path: 'reviews/create', component: ReviewCreateComponent, canActivate: [AuthGuard] },
-  { path: 'reviews/edit/:id', component: ReviewEditComponent, canActivate: [AuthGuard] },
-  { path: 'reviews/details/:id', component: ReviewDetailsComponent, canActivate: [AuthGuard] },
+  // { path: 'reviews', component: ReviewListComponent, canActivate: [AuthGuard] },
+  // { path: 'reviews/create', component: ReviewCreateComponent, canActivate: [AuthGuard] },
+  // { path: 'reviews/edit/:id', component: ReviewEditComponent, canActivate: [AuthGuard] },
+  // { path: 'reviews/details/:id', component: ReviewDetailsComponent, canActivate: [AuthGuard] },
   
   // Users routes
   { path: 'users', component: UserListComponent, canActivate: [AuthGuard] },
@@ -32,9 +38,13 @@ export const appRoutes: Route[] = [
   { path: 'users/edit/:id', component: UserEditComponent, canActivate: [AuthGuard] },
   { path: 'users/details/:id', component: UserDetailsComponent, canActivate: [AuthGuard] },
 
+  // Games routes
+  { path: 'games', component: GameListComponent },
+  { path: 'games/details/:id', component: GameDetailComponent },
+
   { path: 'unauthorized', component: UnauthorizedComponent },
   { path: 'pagenotfound', component: PageNotFoundComponent },
-  { path: 'about', pathMatch: 'full', component: AboutComponent , canActivate: [AuthGuard] },
+  { path: 'about', pathMatch: 'full', component: AboutComponent  },
 
 
   

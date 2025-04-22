@@ -1,64 +1,86 @@
-import { Observable, throwError } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, tap } from 'rxjs/operators';
-import { ApiResponse, IUser } from '@game-platform/shared/api';
-import { Injectable } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service';
 import { Router } from '@angular/router';
+import { ApiResponse } from '@game-platform/shared/api';
 import { environment } from '@game-review-platform/shared/util-env';
-import { JwtPayload, jwtDecode } from 'jwt-decode';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { tap } from 'rxjs';
 
-const httpOptions = {
-  observe: 'body',
-  responseType: 'json',
-};
 @Injectable({
-    providedIn: 'root'
-  })
+  providedIn: 'root',
+})
 export class AuthService {
+  private readonly apiUrl = environment.dataApiUrl;
+  private readonly endpoint = '/auth/validate';
 
-    apiUrl = environment.dataApiUrl;
-    // 'http://localhost:3000';
-    endpoint = '/auth/validate';
-    redirectUrl: string | null = null;
-
-    constructor(private readonly http: HttpClient, private cookieService: CookieService,
-       private router: Router) {}
-
-    login(emailAddress: string, password: string): Observable<any> {
-      // this.http.post<ApiResponse<any>>(`${this.apiUrl}${this.endpoint}`, { emailAddress, password })
-      //   .subscribe(response => {
-      //     this.cookieService.set('token', response.results.token);
-
-          // this.authService.isLoggedIn();
-
-          // Navigate to a different route if needed
-          
-          // this.router.navigate(['/auth']);
-        // });
-
-
-      return this.http.post<ApiResponse<any>>(`${this.apiUrl}${this.endpoint}`, { emailAddress, password }).pipe(
-        tap(response => 
-          this.cookieService.set('token', response.results.accessToken))
+  readonly token = signal<string | null>(null);
+  readonly currentUserSignal = computed(() => {
+    const jwt = this.token();
+    if (!jwt) return null;
+    try {
+      return jwtDecode<JwtPayload & { name: string; role: string; id: string }>(
+        jwt
       );
+    } catch (err) {
+      console.error('Error decoding JWT:', err);
+      return null;
     }
+  });
 
-    isAuthenticated(): boolean {
-      return !!this.cookieService.get('token');
+  readonly isAuthenticated = computed(() => !!this.token());
+
+  constructor(
+    private readonly http: HttpClient,
+    private readonly cookieService: CookieService,
+    private readonly router: Router
+  ) {
+    // ✅ Initialize the token after cookieService is available
+    const storedToken = this.cookieService.get('token');
+    if (storedToken) {
+      this.token.set(storedToken);
     }
+  }
 
-    decodeToken(): any {
-      try {
-        const token = this.cookieService.get('token');
-        if (!token) return null;
+  login(emailAddress: string, password: string) {
+    return this.http
+      .post<ApiResponse<any>>(`${this.apiUrl}${this.endpoint}`, {
+        emailAddress,
+        password,
+      })
+      .pipe(
+        tap((response) => {
+          const token = response.results.accessToken;
+          this.cookieService.set('token', token);
+          this.token.set(token); 
+        })
+      );
+  }
   
-        const decodedToken = jwtDecode<JwtPayload>(token);
-        return decodedToken;
-      } catch (error) {
-        console.error('Error decoding token:', error);
-        return null;
-      }
+
+  logout(): void {
+    this.cookieService.delete('token');
+    this.token.set(null);
+    this.router.navigate(['/login']);
+  }
+
+  register(payload: any) {
+    return this.http.post<ApiResponse<any>>(
+      `${this.apiUrl}/auth/register`,
+      payload
+    );
+  }
+
+  decodeToken(token?: string): any {
+    try {
+      const jwt = token || this.cookieService.get('token');
+      if (!jwt) return null;
+      return jwtDecode<JwtPayload & { name: string; role: string; id: string }>(
+        jwt
+      );
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
     }
-    
+  }
 }

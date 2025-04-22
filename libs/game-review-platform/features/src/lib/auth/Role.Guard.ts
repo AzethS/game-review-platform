@@ -1,35 +1,42 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, Router } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  RouterStateSnapshot,
+  UrlTree,
+  Router,
+} from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { JwtPayload } from 'jwt-decode';
+
+interface MyJwtPayload extends JwtPayload {
+  id: string;
+  role: string;
+  name: string;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RoleGuard {
-
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(
     next: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-
-    const currentUser = this.authService.decodeToken();
-    // if (currentUser && currentUser.role === next.data['role']) {
-    //   return true;
-    // }
+    state: RouterStateSnapshot
+  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+    const currentUser = this.authService.currentUserSignal(); // signal call
 
     if (!currentUser) {
       this.router.navigate(['/login']);
       return false;
     }
 
-    const roles = next.data['role'] as Array<string>;
-    if (roles && roles.includes(currentUser.role)) {
+    const roles = next.data['role'] as string[]; // data.role = ['Admin', 'Member']
+    if (roles && roles.includes((currentUser as MyJwtPayload).role)) {
       return true;
     }
 
-    // Navigate to some other route if the user doesn't have the right role
     this.router.navigate(['/unauthorized']);
     return false;
   }

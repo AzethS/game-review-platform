@@ -1,26 +1,20 @@
 import { Id } from './id.type';
-
-
-type User = Id;
-type Game = Id;
+import { IUser } from './user.interface';
+import { IGame } from './game.interface';
 
 export interface IReview {
-  id: string;
-  userId: User; // Reference to User collection
-  gameId: Game; // Reference to Game collection
-  rating: number; // Between 0 and 5
-  comment?: string; // Optional comment
-  createdAt: Date;
+  id: Id;
+  comment: string;
+  rating: number;
+  userId: IUser;
+  gameId: IGame;
 }
+
 export interface IPopulatedReview extends IReview {
-  userName: string; // Populated user name
-  gameTitle: string; // Populated game title
+  userName: string;
+  gameTitle: string;
 }
 
-
-// CRUD utility types
 export type ICreateReview = Pick<IReview, 'userId' | 'gameId' | 'rating' | 'comment'>;
-
 export type IUpdateReview = Partial<Omit<IReview, 'id'>>;
-
 export type IUpsertReview = IReview;

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { IUser, Id, IReview, IGame } from '@game-platform/shared/api';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
+import { Model, Types, isValidObjectId } from 'mongoose';
 import { CreateUserDto, UpdateUserDto } from '@game-platform/backend/dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -20,7 +20,7 @@ export class UserService {
     @InjectModel('User') private readonly userModel: Model<IUser>,
     @InjectModel('Review') private readonly reviewModel: Model<IReview>,
     @InjectModel('Game') private readonly gameModel: Model<IGame>,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   /**
@@ -28,8 +28,20 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto): Promise<string> {
     try {
+      const ownedGames = (createUserDto.ownedGames || []).map((g) =>
+        typeof g === 'string' ? g : g.id
+      );
+      const reviewsGiven = (createUserDto.reviewsGiven || []).map((r) =>
+        typeof r === 'string' ? r : r.id
+      );
+
       const hashedPassword = await this.hashPassword(createUserDto.password);
-      const userToSave = { ...createUserDto, password: hashedPassword };
+      const userToSave = {
+        ...createUserDto,
+        password: hashedPassword,
+        ownedGames,
+        reviewsGiven,
+      };
 
       const createdUser = new this.userModel(userToSave);
       const user = await createdUser.save();
@@ -80,14 +92,24 @@ export class UserService {
   /**
    * Change a user's password.
    */
-  async changePassword(userId: Id, currentPassword: string, newPassword: string): Promise<boolean> {
+  async changePassword(
+    userId: Id,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<boolean> {
     try {
-      const user = await this.userModel.findById(userId).select('+password').exec();
+      const user = await this.userModel
+        .findById(userId)
+        .select('+password')
+        .exec();
       if (!user) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      const isPasswordMatching = await bcrypt.compare(currentPassword, user.password);
+      const isPasswordMatching = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
       if (!isPasswordMatching) {
         throw new BadRequestException('Current password is incorrect');
       }
@@ -140,16 +162,21 @@ export class UserService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid ID format');
     }
+
     try {
       const user = await this.userModel
         .findById(id)
-        .populate('reviewsGiven')
-        .populate('ownedGames')
+        .populate({
+          path: 'reviewsGiven',
+          populate: { path: 'gameId', select: '_id title' },
+        })
+        .populate('ownedGames', '_id title')
         .exec();
 
       if (!user) {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
+
       return this.toIUser(user);
     } catch (error) {
       this.handleError(error, 'Failed to retrieve user');
@@ -159,25 +186,32 @@ export class UserService {
   /**
    * Retrieve a user by email address.
    */
-  async getOneByEmail(email: string, includePassword = false): Promise<IUser> {
+  async getOneByEmail(
+    email: string,
+    includePassword = false,
+    suppressNotFound = false
+  ): Promise<IUser | null> {
     try {
       const query = this.userModel.findOne({ emailAddress: email });
       if (includePassword) {
-        query.select('+password'); // Explicitly include the password field
+        query.select('+password');
       }
-  
+
       const user = await query.exec();
       if (!user) {
+        if (suppressNotFound) return null;
         throw new NotFoundException(`User with email ${email} not found`);
       }
-  
+
       return this.toIUser(user, includePassword);
     } catch (error) {
-      this.logger.error(error instanceof Error ? error.message : 'Unknown error', UserService.name);
+      this.logger.error(
+        error instanceof Error ? error.message : 'Unknown error',
+        UserService.name
+      );
       throw new BadRequestException('Failed to fetch user');
     }
   }
-  
 
   /**
    * Update user information.
@@ -194,26 +228,40 @@ export class UserService {
         .exec();
 
       if (!updatedUser) {
-        throw new NotFoundException(`User with ID ${id} not found during update`);
+        throw new NotFoundException(
+          `User with ID ${id} not found during update`
+        );
       }
 
       if (updateUserDto.reviewsGiven) {
+        const oldReviewIds = (user.reviewsGiven || []).map((r: any) =>
+          typeof r === 'string' ? r : r.id
+        );
+        const newReviewIds = updateUserDto.reviewsGiven.map((r) =>
+          typeof r === 'string' ? r : r.id
+        );
         await this.updateUserReferences(
           id,
-          user.reviewsGiven || [],
-          updateUserDto.reviewsGiven,
+          oldReviewIds,
+          newReviewIds,
           this.reviewModel,
-          'reviewsGiven',
+          'userId'
         );
       }
 
       if (updateUserDto.ownedGames) {
+        const oldGameIds = (user.ownedGames || []).map((g: any) =>
+          typeof g === 'string' ? g : g.id
+        );
+        const newGameIds = updateUserDto.ownedGames.map((g) =>
+          typeof g === 'string' ? g : g.id
+        );
         await this.updateUserReferences(
           id,
-          user.ownedGames || [],
-          updateUserDto.ownedGames,
+          oldGameIds,
+          newGameIds,
           this.gameModel,
-          'ownedGames',
+          'ownedGames'
         );
       }
 
@@ -241,15 +289,30 @@ export class UserService {
    * Helper function to transform Mongoose document into IUser.
    */
   private toIUser(user: any, includePassword = false): IUser {
-    const userObject = user.toObject();
-    userObject.id = userObject._id?.toHexString();
-    delete userObject._id;
+    const obj = user.toObject?.() || user;
+    console.log('[DEBUG] toIUser input obj:', obj);
 
-    if (!includePassword) {
-      delete userObject.password;
-    }
+    return {
+      ...obj,
+      id: obj._id?.toString?.() ?? obj.id ?? 'UNKNOWN_ID',
+      password: includePassword ? obj.password : undefined, // only include if requested
 
-    return userObject as IUser;
+      reviewsGiven: (obj.reviewsGiven || []).map((review: any) => ({
+        ...review,
+        id: review._id?.toString?.() ?? review.id,
+        gameId: review.gameId?._id
+          ? { id: review.gameId._id.toString(), title: review.gameId.title }
+          : review.gameId,
+        userId: review.userId?._id
+          ? { id: review.userId._id.toString(), name: review.userId.name }
+          : review.userId,
+      })),
+
+      ownedGames: (obj.ownedGames || []).map((game: any) => ({
+        id: game._id?.toString?.() ?? game.id,
+        title: game.title ?? 'Unknown Title',
+      })),
+    };
   }
 
   /**
@@ -260,24 +323,45 @@ export class UserService {
     currentRefs: Id[],
     newRefs: Id[],
     model: Model<any>,
-    fieldName: string,
+    fieldName: string
   ): Promise<void> {
-    const toRemove = currentRefs.filter((id) => !newRefs.includes(id.toString()));
+    const toRemove = currentRefs.filter(
+      (id) => !newRefs.includes(id.toString())
+    );
     const toAdd = newRefs.filter((id) => !currentRefs.includes(id.toString()));
 
     if (toRemove.length > 0) {
       await model.updateMany(
         { _id: { $in: toRemove } },
-        { $pull: { [fieldName]: userId } },
+        { $pull: { [fieldName]: userId } }
       );
     }
 
     if (toAdd.length > 0) {
       await model.updateMany(
         { _id: { $in: toAdd } },
-        { $push: { [fieldName]: userId } },
+        { $push: { [fieldName]: userId } }
       );
     }
+  }
+  async addGameToOwnedList(userId: string, gameId: string): Promise<IUser> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
+
+    if (!user.ownedGames) user.ownedGames = [];
+
+    const alreadyOwned = user.ownedGames.some(
+      (g: any) => (g._id?.toString?.() ?? g.toString?.()) === gameId
+    );
+
+    if (!alreadyOwned) {
+      user.ownedGames.push(gameId as any); // rely on Mongoose to resolve reference
+      await user.save();
+    }
+
+    return this.toIUser(
+      await user.populate('ownedGames') // ensure titles come through
+    );
   }
 
   /**

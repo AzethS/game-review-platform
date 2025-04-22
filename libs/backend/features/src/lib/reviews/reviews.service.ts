@@ -27,27 +27,33 @@ export class ReviewService {
     return {
       ...reviewObject,
       id: reviewObject._id.toHexString(),
+      gameId: reviewObject.gameId?._id
+        ? { id: reviewObject.gameId._id.toHexString(), title: reviewObject.gameId.title }
+        : reviewObject.gameId, // fallback if not populated
+      userId: reviewObject.userId?._id
+        ? { id: reviewObject.userId._id.toHexString(), name: reviewObject.userId.name }
+        : reviewObject.userId,
     };
   }
-
-  /**
-   * Create a new review
-   */
   async create(createReviewDto: CreateReviewDto): Promise<string> {
     try {
       const newReview = new this.reviewModel(createReviewDto);
       const savedReview = await newReview.save();
 
+      // These are always strings now, no need for type check
+      const userId = createReviewDto.userId;
+      const gameId = createReviewDto.gameId;
+
       // Update user's reviewsGiven array
       await this.userModel.findByIdAndUpdate(
-        createReviewDto.userId,
+        userId,
         { $push: { reviewsGiven: savedReview._id } },
         { new: true }
       );
 
       // Update game's reviews array
       await this.gameModel.findByIdAndUpdate(
-        createReviewDto.gameId,
+        gameId,
         { $push: { reviews: savedReview._id } },
         { new: true }
       );
@@ -70,7 +76,7 @@ export class ReviewService {
         .find()
         .populate('userId', 'name') // Populate only the name field of the user
         .populate('gameId', 'title') // Populate only the title field of the game
-      .exec();
+        .exec();
       return reviews.map(this.toIReview);
     } catch (error) {
       if (error instanceof Error) {
@@ -198,28 +204,36 @@ export class ReviewService {
       }
 
       // Update user and game references if they are changed
-      if (
-        updateReviewDto.userId &&
-        updateReviewDto.userId !== review.userId.toString()
-      ) {
-        await this.userModel.findByIdAndUpdate(review.userId, {
-          $pull: { reviewsGiven: id },
-        });
-        await this.userModel.findByIdAndUpdate(updateReviewDto.userId, {
-          $push: { reviewsGiven: id },
-        });
+      if (updateReviewDto.userId) {
+        const newUserId =
+          typeof updateReviewDto.userId === 'string'
+            ? updateReviewDto.userId
+            : updateReviewDto.userId.id;
+
+        if (newUserId !== review.userId.toString()) {
+          await this.userModel.findByIdAndUpdate(review.userId, {
+            $pull: { reviewsGiven: id },
+          });
+          await this.userModel.findByIdAndUpdate(newUserId, {
+            $push: { reviewsGiven: id },
+          });
+        }
       }
 
-      if (
-        updateReviewDto.gameId &&
-        updateReviewDto.gameId !== review.gameId.toString()
-      ) {
-        await this.gameModel.findByIdAndUpdate(review.gameId, {
-          $pull: { reviews: id },
-        });
-        await this.gameModel.findByIdAndUpdate(updateReviewDto.gameId, {
-          $push: { reviews: id },
-        });
+      if (updateReviewDto.gameId) {
+        const newGameId =
+          typeof updateReviewDto.gameId === 'string'
+            ? updateReviewDto.gameId
+            : updateReviewDto.gameId.id;
+
+        if (newGameId !== review.gameId.toString()) {
+          await this.gameModel.findByIdAndUpdate(review.gameId, {
+            $pull: { reviews: id },
+          });
+          await this.gameModel.findByIdAndUpdate(newGameId, {
+            $push: { reviews: id },
+          });
+        }
       }
 
       return updatedReview._id.toHexString();

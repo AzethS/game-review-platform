@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { CookieService } from 'ngx-cookie-service';
+import { Component, computed, inject } from '@angular/core';
 import { ThemeService } from '../theme/theme.service';
 import { Router } from '@angular/router';
 import { AuthService } from '@fairys-nx-workshop/features';
@@ -8,39 +7,27 @@ import { RouterModule } from '@angular/router';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule],
   selector: 'lib-game-review-navbar',
+  imports: [CommonModule, RouterModule],
   templateUrl: './navbar.component.html',
   styles: [],
 })
-export class NavbarComponent implements OnInit {
-  profilePicture?: string;
-  currentUser: any;
+export class NavbarComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
+
+  profilePicture = 'assets/profile-picture.png';
+  currentUser = this.authService.currentUserSignal;
+  isAuth = this.authService.isAuthenticated;
   isMenuOpen = false;
 
-  constructor(
-    private cookieService: CookieService,
-    public themeService: ThemeService,
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    this.profilePicture = 'assets/profile-picture.png';
-    this.currentUser = this.authService.decodeToken();
-  }
-
   logout(): void {
-    this.cookieService.delete('token');
-    this.router.navigate(['/login']); // Redirect to login page after logout
+    this.authService.logout();
   }
 
   toggleDarkMode(): void {
     this.themeService.toggleDarkMode();
-  }
-
-  isAuth(): boolean {
-    return this.authService.isAuthenticated();
   }
 
   toggleMenu(): void {

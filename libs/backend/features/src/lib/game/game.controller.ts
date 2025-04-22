@@ -2,6 +2,7 @@ import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common'
 import { IGame } from '@game-platform/shared/api';
 import { CreateGameDto, UpdateGameDto } from '@game-platform/backend/dto';
 import { GameService } from './game.service';
+import { Public } from '../auth/auth.guard';
 
 @Controller('games')
 export class GameController {
@@ -12,6 +13,7 @@ export class GameController {
    * GET /games
    */
   @Get()
+  @Public()
   async getAll(): Promise<IGame[]> {
     return await this.gameService.getAll();
   }
@@ -21,6 +23,7 @@ export class GameController {
    * GET /games/:id
    */
   @Get(':id')
+  @Public()
   async getOne(@Param('id') id: string): Promise<IGame> {
     return await this.gameService.getOne(id);
   }

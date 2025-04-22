@@ -1,22 +1,31 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  Router,
+  RouterStateSnapshot,
+} from '@angular/router';
 import { CookieService } from 'ngx-cookie-service';
-import { AuthService } from './auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthGuard {
+  constructor(private cookieService: CookieService, private router: Router) {}
 
-  constructor(private authService: AuthService, private cookieService: CookieService,
-     private router: Router) {}
+  canActivate(
+    next: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): boolean {
+    const isAuthenticated = this.cookieService.check('token');
 
-  canActivate(next: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-      if (!this.cookieService.check('token')) {
-          this.authService.redirectUrl = state.url;
-          this.router.navigate(['/Login']);
-          return false;
-        }
-        return true;
+    if (!isAuthenticated) {
+      // optionally store intended URL
+      localStorage.setItem('redirectUrl', state.url);
+
+      this.router.navigate(['/login']);
+      return false;
     }
+
+    return true;
+  }
 }

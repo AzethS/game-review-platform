@@ -1,33 +1,52 @@
-<div class="container mx-auto p-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Loading and Messages -->
-  <div *ngIf="loading" class="text-center text-blue-500 text-lg">Loading games...</div>
-  <div *ngIf="successMessage" class="text-green-500 text-lg">{{ successMessage }}</div>
-  <div *ngIf="errorMessage" class="text-red-500 text-lg">{{ errorMessage }}</div>
+  <div *ngIf="loading" class="text-center text-blue-600 text-lg font-medium animate-pulse">
+    Loading games...
+  </div>
+
+  <div *ngIf="successMessage" class="text-center text-green-600 text-lg font-semibold mb-4">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="errorMessage" class="text-center text-red-600 text-lg font-semibold mb-4">
+    {{ errorMessage }}
+  </div>
 
   <!-- No Games Found -->
   <div *ngIf="games.length === 0 && !loading" class="text-center text-gray-500 text-lg">
-    <p>No games found.</p>
+    No games found.
   </div>
 
   <!-- Games Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="games.length > 0">
-    <div *ngFor="let game of games" class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-      <!-- Game Title -->
-      <h3 class="font-bold text-xl text-gray-800 mb-2">{{ game.title }}</h3>
-      <p class="text-gray-600"><b>Description:</b> {{ game.description }}</p>
-      <p class="text-gray-600"><b>Genre:</b> {{ game.genre.join(', ') }}</p>
-      <p class="text-gray-600"><b>Release Date:</b> {{ game.releaseDate | date: 'mediumDate' }}</p>
-      <p class="text-gray-600"><b>Platform IDs:</b> {{ game.platform.join(', ') }}</p>
-      <p class="text-gray-600"><b>Created By:</b> {{ game.createdBy }}</p>
+  <div *ngIf="games.length > 0" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-6">
+    <div *ngFor="let game of games" class="bg-white dark:bg-gray-800 shadow rounded-2xl p-6 transition hover:shadow-xl">
+      <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2 truncate">
+        {{ game.title }}
+      </h3>
+      <p class="text-gray-600 dark:text-gray-300 mb-1">
+        <span class="font-semibold">Description:</span> {{ game.description }}
+      </p>
+      <p class="text-gray-600 dark:text-gray-300 mb-1">
+        <span class="font-semibold">Genre:</span> {{ game.genre?.join(', ') || 'N/A' }}
+      </p>
+      <p class="text-gray-600 dark:text-gray-300 mb-1">
+        <span class="font-semibold">Release Date:</span>
+        {{ game.releaseDate ? (game.releaseDate | date: 'mediumDate') : 'N/A' }}
+      </p>
+      <p class="text-gray-600 dark:text-gray-300">
+        <span class="font-semibold">Created By: </span>
+        <span *ngIf="game.createdBy?.name; else showId">{{ game.createdBy.name }}</span>
+        <ng-template #showId>{{ game.createdBy }}</ng-template>
+      </p>
 
       <!-- Actions -->
-      <div class="flex justify-end mt-4 space-x-4">
-        <button
-          class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-          (click)="deleteGame(game.id)"
+      <div class="mt-6">
+        <a
+          [routerLink]="['/games/details', game.id]"
+          class="inline-block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
         >
-          Delete
-        </button>
+          View Details
+        </a>
       </div>
     </div>
   </div>

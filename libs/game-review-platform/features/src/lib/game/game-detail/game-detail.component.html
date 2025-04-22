@@ -1,0 +1,116 @@
+<!-- Game Detail Wrapper -->
+<div *ngIf="!loading && game" class="max-w-4xl mx-auto px-4 py-10 space-y-10">
+
+  <!-- Game Info Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 space-y-4">
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">{{ game.title }}</h1>
+
+    <p class="text-gray-600 dark:text-gray-300">
+      <span class="font-semibold">Description:</span> {{ game.description }}
+    </p>
+
+    <p class="text-gray-600 dark:text-gray-300">
+      <span class="font-semibold">Release Date:</span> {{ game.releaseDate | date: 'longDate' }}
+    </p>
+
+    <!-- Genre Chips -->
+    <div *ngIf="game.genre?.length" class="flex flex-wrap gap-2">
+      <span
+        *ngFor="let g of game.genre"
+        class="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200"
+      >
+        {{ g }}
+      </span>
+    </div>
+
+    <p class="text-gray-600 dark:text-gray-300">
+      <span class="font-semibold">Created By:</span> {{ game.createdBy?.name || 'Unknown' }}
+    </p>
+
+    <!-- Platform Chips -->
+    <div>
+      <span class="font-semibold text-gray-600 dark:text-gray-300">Platforms:</span>
+      <ng-container *ngIf="game.platform?.length; else noPlatforms">
+        <div class="flex flex-wrap gap-2 mt-2">
+          <span
+            *ngFor="let p of game.platform"
+            class="inline-block bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm px-3 py-1 rounded-full"
+          >
+            {{ p.name }}
+          </span>
+        </div>
+      </ng-container>
+      <ng-template #noPlatforms>
+        <span class="italic text-gray-400 ml-2">No platforms listed</span>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Add to Owned -->
+  <div *ngIf="isAuthenticated && fullUser" class="flex justify-end">
+    <button
+      (click)="addToOwned()"
+      [disabled]="isGameOwned"
+      class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {{ isGameOwned ? 'Game Already Owned' : 'Add to My Library' }}
+    </button>
+  </div>
+
+  <!-- Add Review -->
+  <div *ngIf="isAuthenticated && !hasUserReviewed" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <lib-review-create
+      [gameId]="game!.id"
+      [userId]="currentUser!.id"
+      (reviewCreated)="onReviewSubmitted()"
+    ></lib-review-create>
+  </div>
+
+  <!-- Reviews Section -->
+  <div *ngIf="game.reviews?.length" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+      Reviews ({{ game.reviews?.length || 0 }})
+    </h3>
+    
+
+    <p class="text-gray-600 dark:text-gray-300 mb-4">
+      <span class="font-semibold">Average Rating:</span>
+      {{ averageRating | number: '1.1-1' }} / 5
+    </p>
+
+    <!-- Review List -->
+    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+      <li *ngFor="let review of game.reviews" class="py-4">
+        <div class="flex justify-between items-start">
+          <div class="space-y-1">
+            <!-- Animated Stars -->
+            <div class="flex space-x-1 text-yellow-400 text-lg">
+              <ng-container *ngFor="let s of [].constructor(review.rating)">
+                <span>★</span>
+              </ng-container>
+              <ng-container *ngFor="let s of [].constructor(5 - review.rating)">
+                <span class="text-gray-300 dark:text-gray-500">☆</span>
+              </ng-container>
+            </div>
+
+            <p class="text-gray-700 dark:text-gray-300">{{ review.comment }}</p>
+          </div>
+
+          <!-- Author Link (Safe Access) -->
+          <div *ngIf="review.userId?.id && review.userId?.name" class="text-right">
+            <a
+              [routerLink]="['/users/details', review.userId.id]"
+              class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+            >
+              {{ review.userId.name }}
+            </a>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Loading/Error State -->
+<div *ngIf="loading" class="text-center text-blue-500 text-lg font-medium mt-10">Loading game details...</div>
+<div *ngIf="errorMessage" class="text-center text-red-500 text-lg font-medium mt-10">{{ errorMessage }}</div>

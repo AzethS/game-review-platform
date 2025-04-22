@@ -1,10 +1,14 @@
+// libs/shared/dto/src/lib/company.dto.ts
+
 import {
   IsNotEmpty,
   IsString,
   IsOptional,
   IsArray,
-  IsMongoId,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
 import {
   ContactInformation,
   ICreateCompany,
@@ -12,7 +16,23 @@ import {
   IUpsertCompany,
 } from '@game-platform/shared/api';
 
-export class CreateCompanyDto implements ICreateCompany {
+import { GameRefDto } from './game.dto';
+
+// Minimal Ref DTO
+export class CompanyRefDto {
+  @IsString()
+  id!: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+}
+
+export class CreateCompanyDto{
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -25,60 +45,61 @@ export class CreateCompanyDto implements ICreateCompany {
   @IsNotEmpty()
   description!: string;
 
-  @IsString()
   @IsNotEmpty()
   contactInformation!: ContactInformation;
 
+  @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  gamesCreated: string[] = []; // Add games
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  gamesCreated: GameRefDto[] = [];
 }
 
-export class UpdateCompanyDto implements IUpdateCompany {
+export class UpdateCompanyDto{
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   name?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   location?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsString()
   @IsOptional()
   contactInformation?: ContactInformation;
 
-  @IsArray()
   @IsOptional()
-  @IsMongoId({ each: true })
-  gamesCreated?: string[] = [];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  gamesCreated?: GameRefDto[];
 }
 
-export class UpsertCompanyDto implements IUpsertCompany {
+export class UpsertCompanyDto{
   @IsOptional()
   @IsString()
   id!: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   name!: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   location!: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   description!: string;
 
-  @IsString()
   @IsOptional()
   contactInformation!: ContactInformation;
 
   @IsArray()
-  @IsMongoId({ each: true })
-  gamesCreated!: string[]; // Add games
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  gamesCreated!: GameRefDto[];
 }

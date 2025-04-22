@@ -1,0 +1,82 @@
+/* .register-container {
+    max-width: 500px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .register-container h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+  
+  .form-group label {
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    color: #444;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  
+  .address-group {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  .address-group legend {
+    font-weight: 600;
+    color: #555;
+  }
+  
+  button[type='submit'] {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #0077cc;
+    color: white;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  button[type='submit']:hover {
+    background-color: #005fa3;
+  }
+  
+  button[disabled] {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    margin-top: 1rem;
+    color: #c0392b;
+    font-weight: 500;
+    text-align: center;
+  }
+  
+  .success-message {
+    margin-top: 1rem;
+    color: #27ae60;
+    font-weight: 500;
+    text-align: center;
+  }
+   */

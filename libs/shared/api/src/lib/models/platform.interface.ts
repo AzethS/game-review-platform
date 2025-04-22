@@ -1,16 +1,15 @@
 import { Id } from './id.type';
+import { IGame } from './game.interface';
 
-
-type Game = Id;
 export interface IPlatform {
-  id: string;
+  id: Id;
   name: string;
-  description?: string;
-  games: Game[]; // References to games
+  description: string;
+  games?: IGame[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export type ICreatePlatform = Pick<IPlatform, 'name' | 'description' | 'games'>;
-
-export type IUpdatePlatform = Partial<Omit<IPlatform, 'id' >>;
-
+export type ICreatePlatform = Pick<IPlatform, 'name' | 'description'>;
+export type IUpdatePlatform = Partial<Omit<IPlatform, 'id'>>;
 export type IUpsertPlatform = IPlatform;

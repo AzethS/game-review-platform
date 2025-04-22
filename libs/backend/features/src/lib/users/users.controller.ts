@@ -30,13 +30,14 @@ export class UserController {
 
     @Post('')
     async create(@Body() data: CreateUserDto) {
-        const generatedId = await this.userService.create(data);
-        return { id: generatedId};
+      const generatedId = await this.userService.create(data);
+      return { id: generatedId };
     }
+    
 
     @Put(':id')
-    async update(@Param('id') id: string, @Body() updateTrainingDto: UpdateUserDto) {
-        return await this.userService.update(id, updateTrainingDto);
+    async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+        return await this.userService.update(id, updateUserDto);
     }
 
     @Delete(':id')
@@ -60,6 +61,11 @@ export class UserController {
       const { currentPassword, newPassword } = changePasswordDto;
       await this.userService.changePassword(userId, currentPassword, newPassword);
       return { message: 'Password successfully changed' };
+    }
+
+    @Patch(':id/owned-games')
+    addToOwned(@Param('id') id: string, @Body('gameId') gameId: string) {
+      return this.userService.addGameToOwnedList(id, gameId);
     }
 
 }

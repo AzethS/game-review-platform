@@ -14,13 +14,13 @@ async function bootstrap() {
 
   // Define allowed CORS origins based on environment
   const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ['https://your-production-frontend.com'] 
+    ? ['https://heroku.com/game-review-fairys'] 
     : ['http://localhost:4200']; // Development Frontend URL
 
   // Enable CORS with dynamic origins
   app.enableCors({
     origin: allowedOrigins,
-    methods: 'GET,POST,PUT,DELETE,OPTIONS',
+    methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   });
 

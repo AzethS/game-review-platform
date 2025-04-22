@@ -1,15 +1,48 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, Max, Min, IsMongoId } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsOptional,
+  Max,
+  Min,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ICreateReview, IUpdateReview } from '@game-platform/shared/api';
+import { GameRefDto } from './game.dto';
+import { UserRefDto } from './user.dto';
 
+// Reference DTOs
 
-
-export class CreateReviewDto implements ICreateReview {
-  @IsMongoId()
+export class ReviewRefDto{
   @IsNotEmpty()
+  @IsString()
+  id!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  comment!: string;
+
+  @IsNotEmpty()
+  rating!: number;
+
+  @ValidateNested()
+  @Type(() => GameRefDto)
+  gameId!: GameRefDto;
+
+  @ValidateNested()
+  @Type(() => UserRefDto)
+  userId!: UserRefDto;
+}
+
+// Main DTOs
+
+export class CreateReviewDto{
+  @IsString()
   userId!: string;
 
-  @IsMongoId()
-  @IsNotEmpty()
+  @IsString()
   gameId!: string;
 
   @IsNumber()
@@ -18,27 +51,29 @@ export class CreateReviewDto implements ICreateReview {
   @IsNotEmpty()
   rating!: number;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   comment?: string;
 }
 
-export class UpdateReviewDto implements IUpdateReview {
-  @IsMongoId()
-  @IsNotEmpty()
-  userId!: string;
+export class UpdateReviewDto{
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserRefDto)
+  userId?: UserRefDto;
 
-  @IsMongoId()
-  @IsNotEmpty()
-  gameId!: string;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GameRefDto)
+  gameId?: GameRefDto;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(5)
-  @IsOptional()
   rating?: number;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   comment?: string;
 }

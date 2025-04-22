@@ -5,6 +5,10 @@ export interface ApiMetaInfo{
 }
 
 export interface ApiResponse<T> {
-    results?: T[] | T
-    info: ApiMetaInfo
-}
+    results: T;
+    info?: {
+      version?: string;
+      count?: number;
+      [key: string]: any;
+    };
+  }

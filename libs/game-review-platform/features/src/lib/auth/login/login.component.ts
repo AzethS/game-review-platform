@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
 
 @Component({
   selector: 'lib-app-login',
   standalone: true, // Ensure this is marked as a standalone component
-  imports: [FormsModule, CommonModule], // Import CommonModule here
+  imports: [FormsModule, CommonModule, RouterModule], // Import CommonModule here
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
@@ -21,9 +21,19 @@ export class LoginComponent {
 
   onLogin(): void {
     this.authService.login(this.email, this.password).subscribe({
-      next: () => {
+      next: (res) => {
         this.successMessage = 'Login successful!';
-        this.router.navigate(['/dashboard']);
+        this.errorMessage = null;
+
+        const userId = res?.results?.user?.id; // Ensure backend sends user object
+
+        if (userId) {
+          setTimeout(() => {
+            this.router.navigate(['/users/details', userId]); // Redirect to user detail
+          });
+        } else {
+          this.router.navigate(['/']); // Fallback
+        }
       },
       error: (error) => {
         this.errorMessage = 'Invalid email or password';

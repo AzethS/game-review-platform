@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
-import { IReview, ApiResponse } from '@game-platform/shared/api';
+import { IReview, ApiResponse, ICreateReview } from '@game-platform/shared/api';
 import { environment } from '@game-review-platform/shared/util-env';
 
 @Injectable({
@@ -91,22 +91,27 @@ export class ReviewService {
         catchError(this.handleError)
       );
   }
+  
+  syncNeo4jGames(): Observable<any> {
+    return this.http.get('http://localhost:3100/api/neo4j/sync/games', {});
+  }
+  
 
   /**
    * Create a new review.
    */
-  public create(reviewData: Partial<IReview>): Observable<IReview> {
+  public create(reviewData: ICreateReview): Observable<IReview> {
     return this.http
       .post<ApiResponse<IReview>>(`${this.apiUrl}${this.endpoint}`, reviewData)
       .pipe(
         map((response) => {
-          if (!response || !response.results) {
-            console.error('Invalid response format during review creation', response);
+          if (!response?.results) {
+            console.error('[ERROR] Invalid response format', response);
             throw new Error('Failed to create review');
           }
-          return response.results as IReview;
+          return response.results;
         }),
-        tap(() => console.log('Created a new review')),
+        tap(() => console.log('[SUCCESS] Created a new review')),
         catchError(this.handleError)
       );
   }

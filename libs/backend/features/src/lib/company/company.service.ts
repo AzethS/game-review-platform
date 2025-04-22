@@ -74,11 +74,12 @@ export class CompanyService {
       if (updateCompanyDto.gamesCreated !== undefined) {
         await this.updateCompanyReferences(
           id,
-          company.gamesCreated || [],
-          updateCompanyDto.gamesCreated,
+          (company.gamesCreated || []).map(g => typeof g === 'string' ? g : g.id),
+          updateCompanyDto.gamesCreated.map(g => typeof g === 'string' ? g : g.id),
           this.gameModel,
           'createdBy'
         );
+        
       }
 
       return updatedCompany.id as string;
@@ -114,51 +115,40 @@ export class CompanyService {
   }
 
   // Add a game to the company's gamesCreated
-  async addGame(companyId: string, gameId: string): Promise<ICompany> {
-    try {
-      const company = await this.companyModel.findById(companyId).exec();
-      if (!company) {
-        throw new NotFoundException(`Company with ID ${companyId} not found`);
-      }
+// company.service.ts
 
-      if (!company.gamesCreated.includes(gameId)) {
-        company.gamesCreated.push(gameId);
-        await company.save();
+async addGame(companyId: string, gameId: string): Promise<ICompany> {
+  const company = await this.companyModel.findById(companyId).exec();
+  if (!company) throw new NotFoundException(`Company with ID ${companyId} not found`);
 
-        // Update the game's createdBy reference
-        await this.gameModel.findByIdAndUpdate(gameId, { createdBy: companyId });
-      }
-      return this.toICompany(company);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('An unexpected error occurred');
-    }
+  const existingIds = (company.gamesCreated || []).map(g =>
+    typeof g === 'string' ? g : g.id
+  );
+
+  const gameDoc = await this.gameModel.findById(gameId).exec();
+  if (gameDoc && !existingIds.includes(gameId)) {
+    company.gamesCreated = [...(company.gamesCreated || []), gameDoc];
+    await company.save();
   }
+  
 
-  // Remove a game from the company's gamesCreated
-  async removeGame(companyId: string, gameId: string): Promise<ICompany> {
-    try {
-      const company = await this.companyModel.findById(companyId).exec();
-      if (!company) {
-        throw new NotFoundException(`Company with ID ${companyId} not found`);
-      }
+  return this.toICompany(await company.populate('gamesCreated'));
+}
 
-      company.gamesCreated = company.gamesCreated.filter((id) => id.toString() !== gameId);
-      await company.save();
+async removeGame(companyId: string, gameId: string): Promise<ICompany> {
+  const company = await this.companyModel.findById(companyId).exec();
+  if (!company) throw new NotFoundException(`Company with ID ${companyId} not found`);
 
-      // Remove the game's createdBy reference
-      await this.gameModel.findByIdAndUpdate(gameId, { $unset: { createdBy: '' } });
+  company.gamesCreated = (company.gamesCreated || []).filter(g =>
+    (typeof g === 'string' ? g : g.id) !== gameId
+  );
+  await company.save();
 
-      return this.toICompany(company);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('An unexpected error occurred');
-    }
-  }
+  await this.gameModel.findByIdAndUpdate(gameId, { $unset: { createdBy: '' } });
+
+  return this.toICompany(await company.populate('gamesCreated'));
+}
+
 
   // Helper method to update company references
   private async updateCompanyReferences(

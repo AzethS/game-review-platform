@@ -6,7 +6,6 @@ import {
   IsArray,
   IsOptional,
   ValidateNested,
-  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -15,7 +14,11 @@ import {
   IUpdateUser,
   IUpsertUser,
   Address,
+  IGame,
+  IReview,
 } from '@game-platform/shared/api';
+import { GameRefDto } from './game.dto';
+import { ReviewRefDto } from './review.dto';
 
 class AddressDto implements Address {
   @IsNotEmpty()
@@ -39,7 +42,17 @@ class AddressDto implements Address {
   country!: string;
 }
 
-export class CreateUserDto implements ICreateUser {
+export class UserRefDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name!: string;
+}
+
+export class CreateUserDto{
   @IsNotEmpty()
   @IsString()
   name!: string;
@@ -67,50 +80,53 @@ export class CreateUserDto implements ICreateUser {
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  ownedGames: string[] = [];
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  ownedGames: GameRefDto[] = [];
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  reviewsGiven: string[] = [];
+  @ValidateNested({ each: true })
+  @Type(() => ReviewRefDto)
+  reviewsGiven: ReviewRefDto[] = [];
 }
 
-export class UpdateUserDto implements IUpdateUser {
-  @IsString()
+export class UpdateUserDto{
   @IsOptional()
+  @IsString()
   name?: string;
 
-  @IsEmail()
   @IsOptional()
+  @IsEmail()
   emailAddress?: string;
 
-  @IsDate()
   @IsOptional()
+  @IsDate()
   birthDate?: Date;
 
-  @ValidateNested()
   @IsOptional()
+  @ValidateNested()
   @Type(() => AddressDto)
   address?: AddressDto;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   role?: Role;
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  ownedGames?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  ownedGames?: GameRefDto[];
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  reviewsGiven?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => ReviewRefDto)
+  reviewsGiven?: ReviewRefDto[];
 }
 
-export class UpsertUserDto implements IUpsertUser {
-  // Assuming 'id' is a string representation of MongoDB's ObjectId
+export class UpsertUserDto{
   @IsNotEmpty()
   @IsString()
   id!: string;
@@ -142,14 +158,15 @@ export class UpsertUserDto implements IUpsertUser {
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  ownedGames?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => GameRefDto)
+  ownedGames?: GameRefDto[];
 
   @IsOptional()
   @IsArray()
-  @IsMongoId({ each: true })
-  reviewsGiven?: string[];
-  
+  @ValidateNested({ each: true })
+  @Type(() => ReviewRefDto)
+  reviewsGiven?: ReviewRefDto[];
 }
 
 export class ValidateUserDto {
